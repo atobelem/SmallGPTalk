@@ -1,0 +1,10 @@
+.build/
+*.image
+*.changes
+*.sources
+*.fuel
+*.log
+*-Test.xml
+PharoDebug.log
+pharo-local/
+.DS_Store
