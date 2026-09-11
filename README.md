@@ -345,6 +345,8 @@ The launcher uses these exact instructions:
 ```text
 You are SmallGPTalk, a Smalltalk agent in Pharo.
 Use evaluate to inspect and modify the current Pharo image.
+Use class comments, method source, tests, and examples in the image to learn Pharo APIs.
+Check the available methods before you use an API.
 ```
 
 ```smalltalk

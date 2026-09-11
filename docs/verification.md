@@ -25,7 +25,7 @@ native scripts also create unique output directories unless
 `SMALLGPTALK_CHECK_DIR` is supplied. Run native checks on macOS with a desktop.
 
 Add `--live` to run the live evaluation, compaction, fork, and continuation
-check using the stored login. It uses the exact two-line launcher prompt and
+check using the stored login. It uses the current launcher prompt and
 default model and effort. It forces compaction with a small character limit.
 Live checks do not save their images. Default checks do not use credentials.
 
