@@ -35,3 +35,11 @@ without saving the image. A second Pharo process used a separate clean image
 copy and completed a model request with the new record. It also received
 incremental text and measured input usage. No acceptance check remains pending.
 See `validation.md` for the historical failures and remaining validation limits.
+
+
+## Optional continuous improvement
+
+The controller and UI controls were added after the rewrite acceptance. Offline
+checks cover repeated cycles, independent evaluation, cancellation, retained
+failures, restart, and fixture repair. Native controls were checked with a test
+model. See `validation.md` for evidence and the limits of same-image verification.

@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkChat',
  #superclass : 'SpPresenter',
- #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector' ],
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'improvementControls' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -60,6 +60,7 @@ SmallGPTalkChat >> defaultLayout [
  | layout |
  layout := SpBoxLayout newVertical spacing: 6.
  modelSelector ifNotNil: [ layout add: modelSelector height: 30 ].
+ improvementControls ifNotNil: [ layout add: improvementControls height: 60 ].
  ^ layout
   add: usage expand: false;
   add: exchanges height: 140;
@@ -82,6 +83,7 @@ SmallGPTalkChat >> initializeWindow: window [
 SmallGPTalkChat >> connectTo: aSession [
  | subscription |
  self disconnect.
+ improvementControls := nil.
  session := aSession.
  subscription := session whenChanged: [ :exchange |
   self application defer: [ self refreshFor: exchange from: subscription ] ].
@@ -108,7 +110,8 @@ SmallGPTalkChat >> refreshFor: exchange from: subscription [
 
 { #category : 'connection' }
 SmallGPTalkChat >> disconnect [
- observer ifNotNil: [ session removeObserver: observer. observer := nil ]
+ observer ifNotNil: [ session removeObserver: observer. observer := nil ].
+ improvementControls ifNotNil: [ improvementControls disconnect ]
 ]
 
 { #category : 'accessing' }
@@ -196,4 +199,12 @@ SmallGPTalkChat >> selectExchange: exchange [
  | index |
  index := exchanges items identityIndexOf: exchange.
  index > 0 ifTrue: [ exchanges selectIndex: index scrollToSelection: true ]
+]
+
+{ #category : 'configuration' }
+SmallGPTalkChat >> useImprovement: improvement [
+ improvement session == session ifFalse: [ self error: 'Use improvement for this chat session.' ].
+ improvementControls ifNotNil: [ improvementControls disconnect ].
+ improvementControls := self instantiate: SmallGPTalkImprovementControls.
+ improvementControls connectTo: improvement
 ]

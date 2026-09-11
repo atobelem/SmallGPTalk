@@ -266,6 +266,57 @@ new input can exceed the window before another measurement is available.
 The live-session check explicitly selects the character policy to force
 compaction with a small fixture; token decisions have separate offline tests.
 
+## Continuous improvement
+
+The chat launcher supplies an optional improvement controller. Opening the chat
+leaves it idle. Press Start improvement to begin, Stop improvement to stop, and
+Inspect improvement to inspect its cycles. Cancel in the chat cancels only the
+current model run; it does not stop the controller. Closing a view also leaves
+the controller running.
+
+The same behavior is available without a view:
+
+```smalltalk
+session tools: { SmallGPTalkEvaluate new }.
+improvement := SmallGPTalkImprovement forSession: session.
+improvement start.
+"From another process:"
+improvement stop.
+improvement wait.
+improvement cycles last inspect.
+```
+
+Each cycle asks the agent to make one small change, first show a failing test,
+make it pass, and then refactor. Pharo independently runs the loaded
+`SmallGPTalk-Tests` suite after the model run, including after a failed response.
+The cycle retains its `run`, `verification`, and `error`. Verification is an
+evaluation object with its source, actual result, bounded output, and state.
+The default result contains the SUnit result and the failed test names.
+The next prompt includes that verification output as data.
+
+The controller waits 30 seconds between cycles, including failed cycles. It has
+no cycle limit. Stop cancels the active work and prevents the next cycle. Wait
+returns after cleanup; do not call it from the UI process. Foreign calls can
+delay cancellation. Restart keeps previous cycles and conversation history.
+
+Set these options before starting:
+
+```smalltalk
+improvement intervalSeconds: 30.
+improvement verificationTimeoutSeconds: 60.
+"Optional replacement for the default SUnit expression:"
+improvement verificationSource: 'MyTestClass suite run'.
+```
+
+The controller composes sessions, runs, and evaluations. The UI observes it and
+does not own its execution. Supply `view useImprovement: improvement` before
+opening a view for the same session. Fork does not copy an active controller.
+
+Changes remain in the current image. This mode does not export source, commit,
+push, save the image, or provide rollback. The model can modify loaded tests and
+its own code; the independent check runs that current code, not a protected
+reference copy. TDD is requested in the prompt, not enforced by a sandbox.
+
 ## Open views and observe
 
 To open a new chat from the terminal after login:

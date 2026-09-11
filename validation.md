@@ -1,7 +1,7 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 170 offline
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 181 offline
 tests with seed 817845566. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
@@ -202,3 +202,30 @@ The final suite passed all 170 tests (seed 255424582); see
 The live-session script now selects the character policy explicitly so that
 its small fixture still forces compaction. The token policy is verified with
 supplied measurements in offline tests, not a live near-capacity request.
+
+
+## Continuous improvement update
+
+Five initial behavior tests failed with missing behavior (175 tests, five
+errors). After implementation, all 175 passed. Review tests covered UI control,
+observer errors, verification failure, stopping during the interval, restart,
+and timeout. All 180 then passed.
+
+A fixture-repair test exposed a nested SUnit execution problem. The inherited
+test environment cleaned up the controller's processes and blocked termination.
+The scoped watchdog captured the stacks in `.build/improvement-diagnostic.log`.
+Verification now activates the default execution environment around its
+supervised evaluation, so SUnit creates a separate test environment. No global
+process-cleanup setting is disabled. The fixture test checks its initial failure,
+a method repair through evaluate, and the successful independent test result.
+
+The final clean suite passed 181 tests (seed 227130436). The default verification
+expression also ran the complete suite in a separate process; see
+`.build/improvement-verification-final.log`. The native controls opened and
+stopped execution with a test model; the screenshot is
+`.build/improvement-ui.png`. Loaded-source inspection is recorded in
+`.build/improvement-source-final.log`.
+
+These checks use a test model and disposable images. Continuous OpenAI-directed
+self-modification was not enabled during validation. The user starts that mode
+explicitly in the chat. Same-image checks are not protected from agent changes.
