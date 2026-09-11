@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkChat',
  #superclass : 'SpPresenter',
- #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'nextUsage', 'refreshingHistory' ],
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'nextUsage', 'refreshingHistory', 'refreshQueue' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -108,11 +108,14 @@ SmallGPTalkChat >> initializeWindow: window [
 
 { #category : 'connection' }
 SmallGPTalkChat >> connectTo: aSession [
- | subscription |
+ | subscription queue |
  self disconnect.
  session := aSession.
- subscription := session whenChanged: [ :exchange |
-  self application defer: [ self refreshFor: exchange from: subscription ] ].
+ queue := SmallGPTalkRefreshQueue
+  schedule: [ :work | self application defer: work ]
+  deliver: [ :exchange | self refreshFor: exchange from: subscription ].
+ refreshQueue := queue.
+ subscription := session whenChanged: [ :exchange | queue request: exchange ].
  observer := subscription.
  exchanges items: #().
  status label: ''.
@@ -136,6 +139,7 @@ SmallGPTalkChat >> refreshFor: exchange from: subscription [
 
 { #category : 'connection' }
 SmallGPTalkChat >> disconnect [
+ refreshQueue ifNotNil: [ refreshQueue stop. refreshQueue := nil ].
  observer ifNotNil: [ session removeObserver: observer. observer := nil ].
 ]
 

@@ -449,3 +449,16 @@ The new agent-snapshot regression failed before the correction: 204 tests,
 from the existing request, preserving name, instructions, and tools. The test
 also checks the fork and the next request after an agent edit. Send and manual
 compaction share one run-start and cleanup path in Session.
+
+## Coalesce chat refreshes
+
+Three queue tests failed before implementation (`.build/refresh-red.log`).
+All 207 tests passed after implementation (`.build/refresh-green.log`). A burst
+queues one UI task with the latest state; updates during delivery schedule the
+next task. Disconnect discards pending updates. Conversation records and core
+observer notifications remain complete.
+
+The controlled 1,000-fragment experiment retained 25,000 characters. Rendering
+each state took 15,701 ms; one queued render took 31 ms on this host
+(`.build/refresh-cost.log`). This measures a burst, not all possible UI loads.
+The repeatable check is `scripts/check-refresh-cost.st`.
