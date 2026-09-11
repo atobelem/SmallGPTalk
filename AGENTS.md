@@ -34,6 +34,30 @@
 - Use the native credential store. Do not pass tokens through shell arguments.
 - Treat image tools as full image access. Do not claim a sandbox or automatic rollback.
 
+## Engineering principles
+
+Use these ten principles from Dave Farley's *Modern Software Engineering*
+to guide development and code review. The descriptions below apply the
+principles to this project; they are not direct quotations.
+
+### Improve learning
+
+1. **Iteration.** Work in short cycles. Review each result and improve it in the next cycle.
+2. **Feedback.** Get results early from tests, the running Pharo image, and the user. Use those results to guide the next change.
+3. **Incrementalism.** Make small changes that can be checked independently. Keep the system working after each change.
+4. **Empiricism.** Base decisions on observed behavior. Report what was tested and what remains unknown.
+5. **Experimentation.** State the expected behavior before a change. Use a test or a small experiment to check it. For TDD, first observe the test fail, then make it pass, then refactor.
+
+### Manage complexity
+
+6. **Modularity.** Use small objects and modules with clear protocols. Make each part possible to understand and test separately.
+7. **Cohesion.** Keep related state and behavior together. Give each object a clear purpose.
+8. **Separation of concerns.** Keep the agent loop, provider connection, image tools, and user interface separate. Change each through its protocol.
+9. **Information hiding and abstraction.** Expose the behavior callers need. Keep implementation details inside the object that owns them. Add abstractions for current requirements.
+10. **Loose coupling.** Limit dependencies between objects and packages. Supply collaborators through simple protocols so that one implementation can change with little effect on others.
+
+Source: [Modern Software Engineering — publisher's description and table of contents](https://www.informit.com/store/modern-software-engineering-doing-what-works-to-build-9780137314911).
+
 ## Language
 
 Use ASD-STE100 Simplified Technical English for documentation, comments, and interface text.
