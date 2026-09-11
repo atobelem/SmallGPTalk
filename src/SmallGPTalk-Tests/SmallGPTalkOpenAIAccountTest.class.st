@@ -321,14 +321,14 @@ SmallGPTalkOpenAIAccountTest >> testModelRecordsInputUsageWithoutRejectingMissin
  | model account usage reply |
  account := SmallGPTalkOpenAIAccount store: self renewer: self.
  model := SmallGPTalkOpenAIModel model: 'test-model' effort: 'low' account: account transport: self.
- model contextWindow: 100.
+ model contextWindow: 1000.
  usage := Dictionary new at: 'input_tokens' put: 37; yourself.
  transportAction := [ :body | (SmallGPTalkReply text: 'Done.' calls: #())
   providerData: (Dictionary new at: 'usage' put: usage; yourself); yourself ].
  reply := model respondTo: (SmallGPTalkRequest text: 'Hello' history: #() agent: nil).
  self assert: reply usage inputTokens equals: 37.
- self assert: reply usage capacity equals: 100.
- self assert: reply usage percentage equals: 37.
+ self assert: reply usage capacity equals: 1000.
+ self assert: reply usage percentage equals: 4.
  { nil. 'invalid'. Dictionary new. Dictionary new at: 'input_tokens' put: -1; yourself } do: [ :value |
   usage := value.
   reply := model respondTo: (SmallGPTalkRequest text: 'Hello' history: #() agent: nil).

@@ -148,3 +148,17 @@ SmallGPTalkRequest >> usageForModel: model [
    ifTrue: [ replies last usage ] ifFalse: [ nil ] ].
  ^ history ifEmpty: [ nil ] ifNotEmpty: [ history last modelUsageFor: model ]
 ]
+
+{ #category : 'measurement' }
+SmallGPTalkRequest >> sizeUsageForModel: model [
+ | measuredContext |
+ measuredContext := replies ifNotEmpty: [
+  (replies last isKindOf: SmallGPTalkReply) ifFalse: [ ^ nil ].
+  replies last context ] ifEmpty: [
+   history ifEmpty: [ ^ nil ].
+   history last modelContext ].
+ measuredContext ifNil: [ ^ nil ].
+ (summary = measuredContext summary and: [ summaryIsContinuation = measuredContext summaryIsContinuation ])
+  ifFalse: [ ^ nil ].
+ ^ self usageForModel: model
+]

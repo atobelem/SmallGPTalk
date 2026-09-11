@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkChat',
  #superclass : 'SpPresenter',
- #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'improvementControls' ],
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'improvementControls', 'nextUsage' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -52,7 +52,9 @@ SmallGPTalkChat >> initializePresenters [
  fork := self newButton label: 'Fork here'; action: [ self performAction: [
   self selectedExchange ifNotNil: [ :exchange | self openForkAt: exchange ] ] ]; yourself.
  usage := self newLabel.
- status := self newLabel
+ status := self newLabel.
+ nextUsage := self newLabel.
+ input whenTextChangedDo: [ self showNextEstimate ]
 ]
 
 { #category : 'layout' }
@@ -63,6 +65,7 @@ SmallGPTalkChat >> defaultLayout [
  improvementControls ifNotNil: [ layout add: improvementControls height: 60 ].
  ^ layout
   add: usage expand: false;
+  add: nextUsage expand: false;
   add: exchanges height: 140;
   add: details;
   add: (SpBoxLayout newHorizontal add: inspect; add: inspectContext; add: inspectCalls; yourself) height: 30;
@@ -153,6 +156,7 @@ SmallGPTalkChat >> showSelection [
  | exchange |
  exchange := self selectedExchange.
  self showContextUsage.
+ self showNextEstimate.
  exchange ifNil: [ details text: ''. ^ self ].
  details text: (SmallGPTalkMessageText forExchange: exchange)
 ]
@@ -208,3 +212,21 @@ SmallGPTalkChat >> useImprovement: improvement [
  improvementControls := self instantiate: SmallGPTalkImprovementControls.
  improvementControls connectTo: improvement
 ]
+
+{ #category : 'updating' }
+SmallGPTalkChat >> showNextEstimate [
+ | estimate |
+ session ifNil: [ ^ self ].
+ [
+  estimate := session estimateFor: input text.
+  nextUsage label: (estimate ifNil: [ 'Next request estimate: unavailable' ]
+   ifNotNil: [ 'Next request estimate: ', estimate percentage asString, '% (~',
+    estimate inputTokens asString, ' / ', estimate capacity asString, ' input tokens)' ])
+ ] on: Error do: [ :error | nextUsage label: 'Next request estimate: unavailable' ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> estimateText [ ^ nextUsage label ]
+
+{ #category : 'configuration' }
+SmallGPTalkChat >> messageText: text [ input text: text ]

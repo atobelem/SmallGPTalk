@@ -54,3 +54,12 @@ hidden and outside the current scope.
 
 The integrated tree passed all 181 tests in a clean Pharo 13 image
 (seed 228986182).
+
+
+## Next-request estimation
+
+The next-request estimate includes encoded input growth and is separate from
+measured usage in the UI. Automatic compaction uses it when supplied by the
+model. The OpenAI transport is not called when the estimate reaches its window.
+All 190 offline tests passed, with separate live and native checks recorded in
+`validation.md`. The heuristic can reject early and is not an exact token count.

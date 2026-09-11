@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkContextUsage',
  #superclass : 'Object',
- #instVars : [ 'inputTokens', 'capacity' ],
+ #instVars : [ 'inputTokens', 'capacity', 'inputBytes' ],
  #category : 'SmallGPTalk-Core'
 }
 
@@ -27,3 +27,12 @@ SmallGPTalkContextUsage >> capacity [ ^ capacity ]
 
 { #category : 'measurement' }
 SmallGPTalkContextUsage >> percentage [ ^ (inputTokens * 100 / capacity) rounded ]
+
+{ #category : 'accessing' }
+SmallGPTalkContextUsage >> inputBytes [ ^ inputBytes ]
+
+{ #category : 'initialization' }
+SmallGPTalkContextUsage >> inputBytes: count [
+ (count isInteger and: [ count >= 0 ]) ifFalse: [ self error: 'The input byte count must be nonnegative.' ].
+ inputBytes := count
+]

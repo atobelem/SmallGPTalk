@@ -1,7 +1,7 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 181 offline
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 190 offline
 tests with seed 817845566. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
@@ -183,9 +183,9 @@ sleep. The updated runner passed all 161 tests.
 - Verify renewal after HTTP 401 against a live account when that failure occurs.
   Offline tests cover one retry, repeated rejection, other HTTP failures,
   logout, newer credentials, failed storage, and continuation after evaluation.
-- Automatic compaction uses the latest measured input tokens at an 80% threshold.
-  It cannot count new input or tool output before the next provider measurement.
-  Missing measurements use the character fallback.
+- OpenAI input estimation uses encoded byte growth and the previous measurement.
+  This heuristic is not an exact token count. It can compact or reject early and
+  does not guarantee room for all generated output or provider framing.
 
 File tools, shell tools, other providers, MCP, agent teams, and persistent
 conversation storage remain outside this version's scope.
@@ -229,3 +229,26 @@ stopped execution with a test model; the screenshot is
 These checks use a test model and disposable images. Continuous OpenAI-directed
 self-modification was not enabled during validation. The user starts that mode
 explicitly in the chat. Same-image checks are not protected from agent changes.
+
+
+## Next-request estimation
+
+Four initial tests produced three failures and one error (185 tests). The
+implementation passed those tests; an older telemetry fixture then needed a
+1000-token capacity instead of 100 because the new input guard rejected its
+encoded request. Its exact input measurement and rounded percentage remain
+asserted. A draft UI test failed before its new behavior was added.
+
+The final suite passed 190 tests (seed 904249712). Cases include new-message
+growth, UTF-8 size, a completed tool result that triggers compaction, an oversized
+result retained on failure, fork, summary and model changes, active-run handling,
+and draft updates without network requests. The local guard applies to all
+OpenAI requests, including summaries.
+
+A live request passed and recorded 12 input tokens. The next draft estimate was
+304 tokens (`.build/context-estimate-live.log`). Native verification displayed
+2000 measured tokens and a separate 3068-token draft estimate; screenshot:
+`.build/context-estimate-ui.png`. Loaded-source inspection checked 68 classes
+and 712 methods with no undeclared references or missing self/super sends.
+These are example checks, not evidence that the byte heuristic equals the
+provider tokenizer.

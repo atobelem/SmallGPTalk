@@ -21,13 +21,18 @@ SmallGPTalkOpenAIModel >> model: identifier effort: level account: connection tr
 
 { #category : 'model protocol' }
 SmallGPTalkOpenAIModel >> respondTo: request [
- | body reply |
+ | body reply estimate bytes |
  body := SmallGPTalkOpenAIRequest new encode: request model: model effort: effort.
+ bytes := (STONJSON toString: body) utf8Encoded size.
+ estimate := self estimateBytes: bytes for: request.
+ (estimate notNil and: [ estimate inputTokens >= estimate capacity ]) ifTrue: [
+  self error: 'The estimated input exceeds the model context window. Shorten the message or tool output.' ].
  reply := account withHeadersDo: [ :headers |
   (transport respondsTo: #post:headers:onText:)
    ifTrue: [ transport post: body headers: headers onText: [ :text | request receiveText: text ] ]
    ifFalse: [ transport post: body headers: headers ] ].
  self recordUsageFor: reply.
+ (reply isKindOf: SmallGPTalkReply) ifTrue: [ reply usage ifNotNil: [ :usage | usage inputBytes: bytes ] ].
  ^ reply
 ]
 
@@ -59,3 +64,24 @@ SmallGPTalkOpenAIModel >> identifier [ ^ model copy ]
 
 { #category : 'accessing' }
 SmallGPTalkOpenAIModel >> effort [ ^ effort copy ]
+
+{ #category : 'model protocol' }
+SmallGPTalkOpenAIModel >> estimateFor: request [
+ | body |
+ contextWindow ifNil: [ ^ nil ].
+ body := SmallGPTalkOpenAIRequest new encode: request model: model effort: effort.
+ ^ self estimateBytes: (STONJSON toString: body) utf8Encoded size for: request
+]
+
+{ #category : 'private' }
+SmallGPTalkOpenAIModel >> estimateBytes: bytes for: request [
+ | usage tokens |
+ contextWindow ifNil: [ ^ nil ].
+ usage := request sizeUsageForModel: self.
+ tokens := bytes.
+ usage ifNotNil: [
+  usage inputBytes
+   ifNil: [ tokens := tokens max: usage inputTokens ]
+   ifNotNil: [ tokens := usage inputTokens + (bytes - usage inputBytes max: 0) ] ].
+ ^ SmallGPTalkContextEstimate inputTokens: tokens capacity: contextWindow
+]

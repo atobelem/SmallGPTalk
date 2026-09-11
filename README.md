@@ -252,19 +252,43 @@ against the character limit. That fallback excludes provider framing and tool
 schemas. Missing or invalid optional usage data does not discard a completed
 response.
 
-Automatic compaction uses the latest completed request's input tokens and model
-capacity. It starts at 80% by default, without rounding the comparison. The UI
-rounds its displayed percentage. A measurement of 79.9% can display 80% before
-compaction starts. If the latest request has no measurement, the character
-limit applies. A change of model does not reuse the old model's measurement.
-After a manual summary, covered history does not trigger another compaction.
-Fork keeps the configured thresholds and the copied history measurements.
+Automatic compaction starts at 80% by default, without rounding the comparison.
+For models with `estimateFor:`, it uses the next request estimate. Otherwise it
+uses the latest measurement, or the character limit if no measurement exists.
+The UI rounds percentages for display. Fork keeps thresholds and measurements.
 
-The measurement excludes new user text, generated output, and tool results
-added after that request. It is not a token count for the next request. A large
-new input can exceed the window before another measurement is available.
+The OpenAI model estimates the complete encoded request locally, including
+instructions, tool schemas, provider data, and recorded tool output. The last
+measurement retains its encoded byte count in `inputBytes`. The estimate adds
+one token for each additional UTF-8 byte. It does not subtract measured tokens
+when the byte count decreases. After a summary or model change, it starts from
+the new request's full byte count instead of reusing the old measurement.
+
+This is a conservative byte-based estimate, not a tokenizer or an exact limit.
+It can trigger compaction or reject input earlier than necessary. Provider
+framing, changed text, output, and reasoning can still affect the actual limit.
+The [OpenAI conversation-state guide](https://developers.openai.com/api/docs/guides/conversation-state)
+explains the shared input and output window.
+
+The chat shows measured context and Next request estimate on separate lines.
+The estimate changes with the draft and describes the request before any
+automatic compaction. It is unavailable while a run is active. Estimation does
+not send a model request or execute tools. Inspect it from Smalltalk with:
+
+```smalltalk
+(session estimateFor: 'Explain 6 factorial.') inspect.
+```
+
+Before transport, OpenAI requests at or above the estimated window size fail
+locally with an explicit error. This also applies to summary requests and the
+request after compaction. A large input that cannot be reduced must be shortened.
+Completed tool calls and their results remain in history; they are not replayed
+or silently truncated to make the next request fit.
+
 The live-session check explicitly selects the character policy to force
-compaction with a small fixture; token decisions have separate offline tests.
+compaction with a small fixture. Separate offline tests cover estimated growth,
+Unicode input, tool results, fork, and local rejection. The estimate itself is
+also checked with a live response and in the native UI.
 
 ## Continuous improvement
 

@@ -184,3 +184,10 @@ SmallGPTalkSession >> cancel [
 
 { #category : 'observation' }
 SmallGPTalkSession >> whenChanged: aBlock [ ^ changes add: aBlock ]
+
+{ #category : 'measurement' }
+SmallGPTalkSession >> estimateFor: text [
+ ^ lock critical: [
+  (activeRun notNil or: [ (model respondsTo: #estimateFor:) not ]) ifTrue: [ ^ nil ].
+  model estimateFor: ((context requestFor: text history: exchanges agent: agent) withTools: tools) ]
+]

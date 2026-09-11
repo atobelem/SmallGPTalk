@@ -90,7 +90,8 @@ SmallGPTalkContext >> autoCompactPercentage [ ^ autoCompactPercentage ]
 SmallGPTalkContext >> needsCompactionFor: request model: model [
  | usage |
  (request history isEmpty and: [ request replies isEmpty ]) ifTrue: [ ^ false ].
- usage := request usageForModel: model.
+ usage := (model respondsTo: #estimateFor:) ifTrue: [ model estimateFor: request ] ifFalse: [ nil ].
+ usage ifNil: [ usage := request usageForModel: model ].
  (usage isNil or: [ autoCompactPercentage isNil ])
   ifTrue: [ ^ self needsCompactionFor: request ].
  ^ usage inputTokens * 100 >= (usage capacity * autoCompactPercentage)
