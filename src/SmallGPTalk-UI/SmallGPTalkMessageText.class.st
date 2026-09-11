@@ -106,11 +106,11 @@ SmallGPTalkMessageText class >> forCall: call [
  source isString ifFalse: [
   source := [ STONJSON toString: arguments ] on: Error do: [ :error | 'Cannot display arguments.' ] ].
  text := text, String cr asText, (self literal: source role: 'Source').
- output := call error ifNil: [ call operation ifNotNil: [ :operation | operation output ] ].
+ output := call operation ifNil: [ call error ] ifNotNil: [ :operation | operation output ].
  output ifNotNil: [
   output ifNotEmpty: [ text := text, (self literal: output role: 'Output') ] ].
  (call operation notNil and: [ (call operation respondsTo: #truncated) and: [ call operation truncated ] ])
-  ifTrue: [ text := text, 'Output truncated. Inspect the value for more detail.' asText, String cr asText ].
+  ifTrue: [ text := text, 'Output truncated. Inspect the evaluation for more detail.' asText, String cr asText ].
  ^ text, String cr asText
 ]
 

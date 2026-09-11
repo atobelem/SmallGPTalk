@@ -103,3 +103,18 @@ SmallGPTalkMessageTextTest >> testPendingCancelledAndFailedCallsRemainVisible [
  self assert: (text asString includesSubstring: 'failed').
  self assert: (text asString includesSubstring: call error)
 ]
+
+{ #category : 'tests' }
+SmallGPTalkMessageTextTest >> testFailedEvaluationUsesItsBoundedOutput [
+ | call text |
+ call := SmallGPTalkCall id: 'long-error' name: 'evaluate' arguments:
+  (Dictionary new at: 'source' put: 'Error signal: (String new: 1000 withAll: $x)'; yourself).
+ call executeWith: { SmallGPTalkEvaluate new outputLimit: 32; yourself }.
+ self assert: call state equals: #failed.
+ self assert: call error size equals: 1000.
+ text := (SmallGPTalkMessageText forCall: call) asString.
+ self assert: (text includesSubstring: call operation output).
+ self assert: (text includesSubstring: 'Output truncated.').
+ self deny: (text includesSubstring: (String new: 33 withAll: $x)).
+ self assert: text size < 300
+]
