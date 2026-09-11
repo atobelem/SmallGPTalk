@@ -358,6 +358,10 @@ Tool source and output use literal text. The view does not print the live result
 again. Inspect evaluations still opens the evaluation objects. A notice marks
 truncated output.
 
+The conversation follows new activity when the view is at the bottom. Scroll
+up to read earlier text without being moved by updates. Return to the bottom
+to follow again. Selecting a different exchange starts at its latest text.
+
 To open a new chat from the terminal after login:
 
 ```sh

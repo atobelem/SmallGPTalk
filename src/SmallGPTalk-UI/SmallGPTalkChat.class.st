@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkChat',
  #superclass : 'SpPresenter',
- #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'improvementControls', 'nextUsage' ],
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'improvementControls', 'nextUsage', 'refreshingHistory' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -40,8 +40,8 @@ SmallGPTalkChat >> modelSelector [ ^ modelSelector ]
 SmallGPTalkChat >> initializePresenters [
  exchanges := self newList.
  exchanges display: [ :exchange | (exchange request contractTo: 60), ' — ', exchange state asString ].
- exchanges whenSelectionChangedDo: [ self showSelection ].
- details := self newText beNotEditable.
+ exchanges whenSelectionChangedDo: [ refreshingHistory == true ifFalse: [ self showSelection ] ].
+ details := (self instantiate: SmallGPTalkTranscript) beNotEditable.
  input := self newText.
  cancel := self newButton label: 'Cancel'; action: [ self cancelRun ]; yourself.
  send := self newButton label: 'Send'; action: [ self sendMessage ]; yourself.
@@ -167,10 +167,13 @@ SmallGPTalkChat >> refresh [
  selected := self selectedExchange.
  follow := selected isNil or: [ exchanges items notEmpty and: [ selected == exchanges items last ] ].
  history := session conversation.
- exchanges items: history.
- history ifNotEmpty: [
-  follow ifTrue: [ exchanges selectIndex: history size scrollToSelection: true ]
-   ifFalse: [ self selectExchange: selected ] ].
+ refreshingHistory := true.
+ [
+  exchanges items: history.
+  history ifNotEmpty: [
+   follow ifTrue: [ exchanges selectIndex: history size scrollToSelection: true ]
+    ifFalse: [ self selectExchange: selected ] ]
+ ] ensure: [ refreshingHistory := false ].
  self showSelection
 ]
 
@@ -180,8 +183,8 @@ SmallGPTalkChat >> showSelection [
  exchange := self selectedExchange.
  self showContextUsage.
  self showNextEstimate.
- exchange ifNil: [ details text: ''. ^ self ].
- details text: (SmallGPTalkMessageText forExchange: exchange)
+ exchange ifNil: [ details show: '' for: nil. ^ self ].
+ details show: (SmallGPTalkMessageText forExchange: exchange) for: exchange
 ]
 
 { #category : 'updating' }

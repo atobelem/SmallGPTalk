@@ -200,3 +200,24 @@ SmallGPTalkChatTest >> testUsageShowsTokensForTheSelectedRequest [
   self assert: (session forkAt: run exchange) conversation last modelUsage identicalTo: usage
  ] ensure: [ chat disconnect ]
 ]
+
+{ #category : 'tests' }
+SmallGPTalkChatTest >> testRefreshPreservesTranscriptReadingPosition [
+ | session chat transcript pane position |
+ modelAction := [ :request | String streamContents: [ :stream |
+  1 to: 100 do: [ :index | stream nextPutAll: 'Line ', index asString; cr ] ] ].
+ session := SmallGPTalkSession withModel: self.
+ (session send: 'Hello') wait.
+ chat := SmallGPTalkChat forSession: session.
+ [
+  chat build.
+  transcript := chat presenterAt: #details.
+  transcript adapter widget extent: 400 @ 150; fullBounds.
+  pane := transcript adapter widget scrollPane.
+  pane vScrollbarValue: 0.3; updateScrollbars.
+  position := pane offset.
+  self assert: position y > 0.
+  chat refresh.
+  self assert: pane offset equals: position
+ ] ensure: [ chat disconnect ]
+]

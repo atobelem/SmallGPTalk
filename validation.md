@@ -1,8 +1,8 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 192 offline
-tests with seed 1044911431. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 197 offline
+tests with seed 309634374. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 ## Recent TDD evidence
@@ -274,3 +274,17 @@ evaluations in the native chat. The image closed without saving.
 
 Local evidence: `.build/tool-activity-red.log`,
 `.build/tool-activity-green.log`, and `.build/tool-activity-preview/preview.png`.
+
+## Conversation scroll
+
+Four Morphic text tests first failed because the transcript presenter was
+absent. They passed after the implementation. A composed chat test then failed:
+a history refresh moved the reader from pixel 563 to pixel 1876. The fix ignores
+transient selection changes during the history refresh. All 197 tests passed.
+The checks cover growth at the bottom, a fixed reading position, return to the
+bottom, short text that grows, and a different exchange selection.
+
+A separate native window checked follow, preserve, and resume after UI cycles.
+It closed without saving. Evidence: `.build/scroll-red.log`,
+`.build/scroll-chat.log`, `.build/scroll-final.log`, and
+`.build/scroll-native-qlg5w0af/native.log`.
