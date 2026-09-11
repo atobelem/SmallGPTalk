@@ -68,10 +68,10 @@ SmallGPTalkMessageTextTest >> testToolOnlyRepliesShowEvaluationsInOrder [
  run := session send: 'Make Fibonacci'. run wait.
  self assert: run state equals: #completed.
  text := SmallGPTalkMessageText forExchange: run exchange.
- first := text asString findString: 'evaluate #1 — completed'.
- second := text asString findString: 'evaluate #2 — completed'.
- third := text asString findString: 'evaluate #3 — completed'.
- assistant := text asString findString: 'Assistant'.
+ first := text asString findString: 'Assistant — evaluate #1 — completed'.
+ second := text asString findString: 'Assistant — evaluate #2 — completed'.
+ third := text asString findString: 'Assistant — evaluate #3 — completed'.
+ assistant := text asString findString: 'Assistant' startingAt: third + 1.
  self assert: first > 0.
  self assert: second > first.
  self assert: third > second.

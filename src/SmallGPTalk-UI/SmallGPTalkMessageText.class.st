@@ -99,7 +99,7 @@ SmallGPTalkMessageText >> visitMathInline: node [ canvas << node bodyString asTe
 { #category : 'rendering' }
 SmallGPTalkMessageText class >> forCall: call [
  | text arguments source output |
- text := (call name, ' #', call id, ' — ', call state asString) asText
+ text := ('Assistant — ', call name, ' #', call id, ' — ', call state asString) asText
   addAttribute: TextEmphasis bold; yourself.
  arguments := call arguments.
  source := arguments isDictionary ifTrue: [ arguments at: 'source' ifAbsent: [ nil ] ] ifFalse: [ nil ].
