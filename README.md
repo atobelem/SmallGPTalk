@@ -35,7 +35,7 @@ The rewrite acceptance checks passed. On 2026-09-11, a fresh browser login
 stored credentials in Keychain. A second Pharo process used that record for a
 model request. Live checks also passed evaluation, automatic compaction within
 a tool turn, fork, and continuation without a repeated mutation.
-The current offline suite has 214 passing tests. See [review.md](review.md)
+The current offline suite has 203 passing tests. See [review.md](review.md)
 for the complete source review and its corrections.
 See [validation.md](validation.md) for evidence and validation limits.
 See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.
@@ -315,11 +315,6 @@ Unicode input, tool results, fork, and local rejection. The estimate itself is
 also checked with a live response and in the native UI.
 
 ## Deferred features
-
-Continuous improvement is outside the current scope. Its classes and offline
-checks remain in the repository, but the standard launcher does not create a
-controller or show its controls. It is not active in the standard chat.
-The historical checks are recorded in [validation.md](validation.md).
 
 File tools, shell tools, other providers, MCP, agent teams, and conversation
 storage are also outside this version. Conversations remain in memory.

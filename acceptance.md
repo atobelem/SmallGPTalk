@@ -26,7 +26,7 @@ review is in [review.md](review.md).
 | Use OpenAI with persistent login | OAuth, account, HTTP, TLS, credential-store sources; offline tests; separate live checks | Stored-login catalog and response requests passed. Native Keychain write, update, restart read, and delete passed with invented records. Fresh browser login and a request from a second Pharo process passed on 2026-09-11; see `.build/fresh-login-restart.log`. |
 | Complete a real evaluate, fork, compact, and continue example | `scripts/check-live-session.st` and `.build/final-live.log` | Passed again after the completion-wait correction. The fixture changed exactly once through automatic compaction, fork, manual compaction, and continuation. The preceding live failures and attempted fixes remain recorded in `validation.md`. |
 | Keep tests independent of credentials | Default test runner, fixture sources, and separate native/live scripts | Offline tests use test models, local HTTP fixtures, and invented records. Live scripts exit without saving the image. |
-| Review the loaded code | `scripts/check-source.st`, `.build/supervisor-source.log`, and `review.md` | The latest check inspected 76 classes and 772 methods. No undeclared references or missing self/super messages. Dynamic sends still require behavior tests. |
+| Review the loaded code | `scripts/check-source.st`, `.build/removal-source.log`, and `review.md` | The latest check inspected 71 classes and 718 methods. No undeclared references or missing self/super messages. Dynamic sends still require behavior tests. |
 | Keep documentation accurate and use simplified English | README, validation record, source comments, and examples | Implementation limits and pending work are explicit. Formal STE dictionary compliance has not been independently certified. |
 
 ## Acceptance result
@@ -40,22 +40,12 @@ that revision. Later changes have their own validation records.
 See `validation.md` for the historical failures and remaining validation limits.
 
 
-## Optional continuous improvement
-
-This feature is outside the current scope and hidden in the standard chat.
-The controller and UI controls were added after the rewrite acceptance. Offline
-checks cover repeated cycles, independent evaluation, cancellation, retained
-failures, restart, and fixture repair. Native controls were checked with a test
-model. See `validation.md` for evidence and the limits of same-image verification.
-
-
 ## Main integration
 
 The integration retains both the previous main history and the independent
 rewrite history in merge `a73bb62`. The resulting source uses the rewrite.
 The temporary worktree was removed. The archived tag and the stash retain the
-previous work. Continuous improvement remains
-hidden and outside the current scope.
+previous work.
 
 The integrated tree passed all 181 tests in a clean Pharo 13 image
 (seed 228986182).

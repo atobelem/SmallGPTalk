@@ -16,9 +16,9 @@ checked the loaded methods in a clean Pharo 13 image.
 | UI | 6 | Detached views, subscriptions, model selection, estimates, evaluation inspection, literal tool text, local Markdown, and scroll position |
 | Tests and fixtures | 26 | Assertions against behavior, process cleanup, cancellation boundaries, local HTTP fixtures, credential doubles, mutation checks, and UI integration |
 
-The retained improvement classes and tests were read. The ordinary suite
-includes their offline tests. Continuous improvement remains outside the
-current scope; no live autonomous modification was started.
+The retained improvement classes and tests were read at that revision. They
+have since been removed at the user's request. At review time, improvement
+was outside the current scope; no live autonomous modification was started.
 
 ## Corrections
 
@@ -101,7 +101,7 @@ failed before the change; the final suite has 207 passes. See
 [validation.md](validation.md#uniform-reply-protocol).
 
 The extractions below address execution in Exchange and process supervision.
-Remaining work is to isolate deferred improvement and reduce unnecessary
+Improvement has since been removed. Remaining work is to reduce unnecessary
 access to internal fields in ordinary UI tests. Passing tests do not close
 those design concerns.
 
@@ -122,3 +122,10 @@ to continue waiting. Run retains cancellation and outcome handling; TimeLimit
 retains the deadline. Five tests failed before extraction, then all 214 passed.
 The clean core load, source check, and native chat check also passed.
 See [validation.md](validation.md#shared-process-supervision).
+
+## Remove continuous improvement
+
+The feature and its chat connection were removed at the user's request.
+Its tests and dedicated scripts were also removed. No optional package remains.
+All 203 remaining tests pass. Source inspection and the native chat check pass.
+See [validation.md](validation.md#remove-continuous-improvement).

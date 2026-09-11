@@ -1,8 +1,8 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 214 offline
-tests with seed 51736904. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 203 offline
+tests with seed 1053842761. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -210,7 +210,10 @@ its small fixture still forces compaction. The token policy is verified with
 supplied measurements in offline tests, not a live near-capacity request.
 
 
-## Continuous improvement update
+## Continuous improvement update (historical)
+
+This feature was later removed at the user's request. The results below
+describe the earlier implementation.
 
 Five initial behavior tests failed with missing behavior (175 tests, five
 errors). After implementation, all 175 passed. Review tests covered UI control,
@@ -392,3 +395,19 @@ verified evaluation, automatic compaction, fork, manual compaction, and
 continuation without another mutation (`.build/supervisor-live.log`). Native
 and live check images exited without saving. OAuth and token renewal were not
 retested for this refactor.
+
+## Remove continuous improvement
+
+The controller, cycle records, controls, chat connection, two test classes,
+and two dedicated check scripts were removed at the user's request. No optional
+extension remains. The standard source and scripts contain no references to
+this feature. Earlier results above remain historical evidence.
+
+All 203 remaining tests passed in a clean Pharo 13 image with seed 1053842761
+(`.build/removal-final.log`). Eleven tests were removed with the feature.
+A separate loaded-image check confirmed that the chat is present and no
+improvement classes remain (`.build/removal-absence.log`). Source inspection
+checked 71 classes and 718 methods with zero issues (`.build/removal-source.log`).
+The native chat check passed and its screenshot was inspected
+(`.build/removal-native/native.log`). These images exited without saving.
+No live OpenAI or Keychain check was needed for this removal.
