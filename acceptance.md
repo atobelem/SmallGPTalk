@@ -2,14 +2,16 @@
 
 This audit uses the rewrite sources and its own test results. A passing unit
 suite does not prove that the complete goal is finished. See `validation.md`
-for run counts, seeds, failure history, and native checks.
+for run counts, seeds, failure history, and native checks. The acceptance
+run below is historical. The current tree is on `main`, and its full source
+review is in [review.md](review.md).
 
 ## Requirements and evidence
 
 | Requirement | Evidence inspected | Assessment |
 | --- | --- | --- |
-| Start from a separate implementation | Current branch is `rewrite/from-scratch`; source is in `SmallGPTalk-rewrite` | Separate checkout confirmed. The old checkout contains the abandoned changes and must remain untouched. |
-| Preserve the archived version | The old repository resolves `archive/pre-restart-2026-09-10` to `a8bb17f2cce333e71891447b26ee5ad4698bc8e7` | Tag exists. This audit used read-only commands in that repository. |
+| Start from a separate implementation | The rewrite was developed separately and integrated by merge `a73bb62` | The active checkout is now `SmallGPTalk` on `main`. The temporary worktree was removed after integration. |
+| Preserve the archived version | Annotated tag `archive/pre-restart-2026-09-10` has object `a8bb17f2cce333e71891447b26ee5ad4698bc8e7` and points to commit `328cbdd9ada1fd84bc998e7e41c0292c87f6dcbb` | Tag verified. The abandoned local refactor is retained in Git stash. |
 | Use Smalltalk objects, composition, and TDD | Core sources and the red-to-green records in `validation.md` | Session supplies requests to a model; runs supervise execution; context selects history; tools prepare operations. Review tests added later are identified separately. |
 | Keep the core independent of UI and providers | `scripts/check-core.st`, `.build/core-only-check.log`, and the baseline dependencies | Passed in a clean image with only Core loaded. A named agent, session, and independent fork worked without the UI, image-tool, or OpenAI classes. |
 | Name agents and inspect sessions and conversations | Agent and Session sources; named-agent, retained-history, and agent-change tests | Covered offline. Requests retain the agent name and instructions selected for that request. |
@@ -24,7 +26,7 @@ for run counts, seeds, failure history, and native checks.
 | Use OpenAI with persistent login | OAuth, account, HTTP, TLS, credential-store sources; offline tests; separate live checks | Stored-login catalog and response requests passed. Native Keychain write, update, restart read, and delete passed with invented records. Fresh browser login and a request from a second Pharo process passed on 2026-09-11; see `.build/fresh-login-restart.log`. |
 | Complete a real evaluate, fork, compact, and continue example | `scripts/check-live-session.st` and `.build/final-live.log` | Passed again after the completion-wait correction. The fixture changed exactly once through automatic compaction, fork, manual compaction, and continuation. The preceding live failures and attempted fixes remain recorded in `validation.md`. |
 | Keep tests independent of credentials | Default test runner, fixture sources, and separate native/live scripts | Offline tests use test models, local HTTP fixtures, and invented records. Live scripts exit without saving the image. |
-| Review the loaded code | `scripts/check-source.st`, `.build/final-source.log` | 61 classes and 616 methods checked after the completion-wait correction. No undeclared references or missing self/super messages. Dynamic sends still require behavior tests. |
+| Review the loaded code | `scripts/check-source.st`, `.build/review-source.log`, and `review.md` | The latest check inspected 70 classes and 729 methods. No undeclared references or missing self/super messages. Dynamic sends still require behavior tests. |
 | Keep documentation accurate and use simplified English | README, validation record, source comments, and examples | Implementation limits and pending work are explicit. Formal STE dictionary compliance has not been independently certified. |
 
 ## Acceptance result
@@ -33,12 +35,14 @@ The rewrite acceptance checks passed on 2026-09-11. The final check completed a
 fresh browser login and stored the credential in Keychain. That process exited
 without saving the image. A second Pharo process used a separate clean image
 copy and completed a model request with the new record. It also received
-incremental text and measured input usage. No acceptance check remains pending.
+incremental text and measured input usage. These acceptance checks passed at
+that revision. Later changes have their own validation records.
 See `validation.md` for the historical failures and remaining validation limits.
 
 
 ## Optional continuous improvement
 
+This feature is outside the current scope and hidden in the standard chat.
 The controller and UI controls were added after the rewrite acceptance. Offline
 checks cover repeated cycles, independent evaluation, cancellation, retained
 failures, restart, and fixture repair. Native controls were checked with a test
@@ -48,8 +52,9 @@ model. See `validation.md` for evidence and the limits of same-image verificatio
 ## Main integration
 
 The integration retains both the previous main history and the independent
-rewrite history in one merge. The resulting source uses the rewrite. The old
-checkout and archived tag remain unchanged. Continuous improvement remains
+rewrite history in merge `a73bb62`. The resulting source uses the rewrite.
+The temporary worktree was removed. The archived tag and the stash retain the
+previous work. Continuous improvement remains
 hidden and outside the current scope.
 
 The integrated tree passed all 181 tests in a clean Pharo 13 image
@@ -61,5 +66,5 @@ The integrated tree passed all 181 tests in a clean Pharo 13 image
 The next-request estimate includes encoded input growth and is separate from
 measured usage in the UI. Automatic compaction uses it when supplied by the
 model. The OpenAI transport is not called when the estimate reaches its window.
-All 190 offline tests passed, with separate live and native checks recorded in
+At that change, all 190 offline tests passed. Separate live and native checks are recorded in
 `validation.md`. The heuristic can reject early and is not an exact token count.

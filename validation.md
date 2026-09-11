@@ -1,9 +1,14 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 197 offline
-tests with seed 309634374. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 199 offline
+tests with seed 894721354. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
+
+The latest source review is in [review.md](review.md). Counts in the dated
+sections below describe those earlier revisions. `.build` files are local
+evidence, not versioned artifacts. Logs from the removed rewrite worktree may
+no longer be present; their recorded results are historical evidence.
 
 ## Recent TDD evidence
 
@@ -228,8 +233,8 @@ stopped execution with a test model; the screenshot is
 `.build/improvement-source-final.log`.
 
 These checks use a test model and disposable images. Continuous OpenAI-directed
-self-modification was not enabled during validation. The user starts that mode
-explicitly in the chat. Same-image checks are not protected from agent changes.
+self-modification was not enabled during validation. The mode is now outside the current scope and hidden in the standard chat.
+Same-image checks are not protected from agent changes.
 
 
 ## Next-request estimation
@@ -288,3 +293,20 @@ A separate native window checked follow, preserve, and resume after UI cycles.
 It closed without saving. Evidence: `.build/scroll-red.log`,
 `.build/scroll-chat.log`, `.build/scroll-final.log`, and
 `.build/scroll-native-qlg5w0af/native.log`.
+
+## Full source review on 2026-09-11
+
+The review covered every source file, test, and script. Two UI regressions
+first failed in a 199-test run. One showed an unbounded evaluation error instead
+of the recorded output. The other kept the previous capacity in the draft
+estimate after model selection. Both passed after small UI corrections.
+All 199 tests passed with seed 894721347. The final run, after the truncation
+notice was clarified, passed all 199 tests with seed 894721354. The loaded-source check inspected
+70 classes and 729 methods with zero undeclared references or missing self/super
+messages. A separate clean image passed the core-only load and fork check.
+
+Evidence: `.build/review-red.log`, `.build/review-green.log`,
+`.build/review-final.log`, `.build/review-source.log`, and `.build/review-core.log`.
+The native `check-chat.st` check passed with shared views, model selection,
+window close, and compaction status. Its screenshot was inspected.
+See [review.md](review.md) for coverage and validation limits.

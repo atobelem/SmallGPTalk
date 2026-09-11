@@ -1,0 +1,92 @@
+# Source review — 2026-09-11
+
+This review started at `cfa1d90` on `main`. It covers all 70 Tonel classes,
+the package declarations, all 22 scripts, and the project documents. The
+review read the source and tests, traced the object collaborations, and
+checked the loaded methods in a clean Pharo 13 image.
+
+## Coverage
+
+| Area | Classes | Review focus |
+| --- | ---: | --- |
+| Baseline | 1 | Load order and package dependencies |
+| Core | 12 | Session ownership, run supervision, cancellation, observer order, reply commit, call validation, fork copies, compaction, and context estimates |
+| OpenAI | 20 | Catalog selection, input encoding, complete stream validation, retained provider data, one 401 renewal attempt, OAuth state and PKCE, callback cleanup, TLS, and native credential storage |
+| Pharo | 5 | Explicit evaluate tool, exclusive image access, compiler errors, time limits, recorded output, real values, and retained improvement code |
+| UI | 6 | Detached views, subscriptions, model selection, estimates, evaluation inspection, literal tool text, local Markdown, and scroll position |
+| Tests and fixtures | 26 | Assertions against behavior, process cleanup, cancellation boundaries, local HTTP fixtures, credential doubles, mutation checks, and UI integration |
+
+The retained improvement classes and tests were read. The ordinary suite
+includes their offline tests. Continuous improvement remains outside the
+current scope; no live autonomous modification was started.
+
+## Corrections
+
+### Bounded errors in the conversation
+
+`SmallGPTalkMessageText class>>forCall:` used the full error before considering the
+operation's recorded output. An error with 1,000 characters bypassed a
+32-character output limit while the view reported truncation.
+
+The renderer now uses the operation's recorded output when an operation exists.
+The full error remains in the evaluation object. The truncation notice directs
+the reader to that object. Calls that fail before preparation still show their
+call error. The regression checks the actual evaluation, recorded output,
+truncation notice, and bounded displayed text.
+
+### Context estimate after model selection
+
+Applying a model changed the session but did not refresh the draft estimate.
+The view could still show the capacity of the previous model until the user
+edited the draft or another event refreshed the view.
+
+The apply action now refreshes the local estimate after changing the model.
+The regression switches from a 1,000-token catalog model to a 20,000-token model
+and checks the new capacity without sending a request or changing history.
+
+### Current documentation
+
+The README and acceptance audit no longer describe the removed rewrite worktree
+as the active checkout. They identify `main`, the integration merge, archived
+tag, and retained stash. The manual Tonel path uses `SmallGPTalk`.
+Historical test counts remain labeled as historical results. Current validation
+is separate. The README records the exact launcher prompt, the estimate-based
+compaction policy, and the fact that each launch creates a new image.
+Instructions for starting deferred improvement were removed from the main guide.
+
+## Validation
+
+- The two new regressions failed before the corrections: 199 run, 197 passes,
+  two failures. Evidence: `.build/review-red.log`.
+- The corrected suite passed all 199 tests in a fresh copied image. The final
+  seed is `894721354`. Evidence: `.build/review-final.log`.
+- Loaded-source inspection checked 70 classes and 729 methods. It found zero
+  undeclared references or missing self/super messages.
+  Evidence: `.build/review-source.log`.
+- A separate clean image loaded only Core and completed a named-agent session
+  and an independent fork. Evidence: `.build/review-core.log`.
+- The native chat check applied model effort, opened two views of one session,
+  closed one, retained the other, and displayed completed compaction. Its
+  screenshot was inspected. Evidence: `.build/native-chat/result.txt` and
+  `.build/native-chat/window.png`.
+
+## Limits and remaining work
+
+This is a complete source review, not proof that all possible defects are absent.
+The loaded-source check cannot validate arbitrary dynamic sends. The native
+checks use Pharo 13 Morphic on macOS; other UI backends are not supported by the
+transcript's scroll implementation.
+
+No new live OAuth, token renewal, or Keychain check was required for these UI
+corrections. Earlier live checks remain historical evidence. Renewal after a
+real HTTP 401 still needs observation; the offline cases pass. Input estimates
+remain a byte-based heuristic, not a tokenizer. Account coordination operates
+within one image, not across separate Pharo processes.
+
+Updating an existing running view with new source while retaining its session
+remains separate work. The launcher opens a new image. Existing windows retain
+their in-memory conversations until they are closed.
+
+Local `.build` evidence is ignored by Git. Older logs can be absent after a
+worktree is removed. Use [validation.md](validation.md) for the historical
+record and the scripts for repeatable checks.

@@ -2,7 +2,9 @@
 
 ## Fresh implementation
 
-This directory is a rewrite from zero, not a migration or refactor.
+This directory contains the rewrite from zero, now integrated into main.
+The temporary rewrite worktree was removed. The archived tag and Git stash
+retain the previous implementation and the abandoned local refactor.
 The old implementation is a reference, not the starting class model.
 Do not copy its classes, tests, or architecture as the new implementation.
 Start with executable Smalltalk examples and behavior tests. Let the object
@@ -94,6 +96,9 @@ Keep live account checks and native Keychain checks separate from the offline su
 Report the result and any limit on validation.
 Update the documentation when the implemented behavior changes.
 Do not describe a planned feature as available.
+After changes, open Pharo with the validated source so the user can try it.
+Keep existing in-memory conversations unless the user asks to close them.
+State whether a new image was opened or an existing view was updated.
 
 ## Commits
 

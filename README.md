@@ -3,8 +3,9 @@
 A minimal Smalltalk agent harness for Pharo 13 on macOS.
 
 This implementation was rebuilt from zero and integrated into `main`.
-The previous version remains at tag `archive/pre-restart-2026-09-10`. Its working directory and
-abandoned refactor remain separate.
+The previous version remains at tag `archive/pre-restart-2026-09-10`.
+The temporary rewrite worktree was removed after integration. The abandoned
+local refactor is retained in Git stash. The active checkout is `SmallGPTalk`.
 
 ## Design principles
 
@@ -31,6 +32,8 @@ The rewrite acceptance checks passed. On 2026-09-11, a fresh browser login
 stored credentials in Keychain. A second Pharo process used that record for a
 model request. Live checks also passed evaluation, automatic compaction within
 a tool turn, fork, and continuation without a repeated mutation.
+The current offline suite has 199 passing tests. See [review.md](review.md)
+for the complete source review and its corrections.
 See [validation.md](validation.md) for evidence and validation limits.
 See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.
 
@@ -54,7 +57,7 @@ For a manual load, replace the path below with this checkout's absolute path:
 ```smalltalk
 Metacello new
     baseline: 'SmallGPTalk';
-    repository: 'tonel:///absolute/path/to/SmallGPTalk-rewrite/src';
+    repository: 'tonel:///absolute/path/to/SmallGPTalk/src';
     load.
 ```
 
@@ -190,7 +193,7 @@ can delay termination. Image access has no sandbox or automatic rollback.
 | Model request | 120 seconds | `session requestTimeoutSeconds:` |
 | Evaluation | 10 seconds | `tool timeoutSeconds:` |
 | Printed output | 20,000 characters | `tool outputLimit:` |
-| Automatic compaction | 80% of measured model capacity | `session context autoCompactPercentage:` |
+| Automatic compaction | 80% of model capacity, using estimated input when available | `session context autoCompactPercentage:` |
 | Character fallback | 60,000 characters | `session context autoCompactLimit:` |
 
 Configure tools before supplying them to a session. Set both compaction limits
@@ -271,7 +274,7 @@ The [OpenAI conversation-state guide](https://developers.openai.com/api/docs/gui
 explains the shared input and output window.
 
 The chat shows measured context and Next request estimate on separate lines.
-The estimate changes with the draft and describes the request before any
+The estimate changes with the draft and the applied model. It describes the request before any
 automatic compaction. It is unavailable while a run is active. Estimation does
 not send a model request or execute tools. Inspect it from Smalltalk with:
 
@@ -290,59 +293,15 @@ compaction with a small fixture. Separate offline tests cover estimated growth,
 Unicode input, tool results, fork, and local rejection. The estimate itself is
 also checked with a live response and in the native UI.
 
-## Continuous improvement
+## Deferred features
 
-Continuous improvement is hidden in the standard chat. The launcher does not
-create a controller or show its controls. The implementation remains available
-through the Smalltalk API and an explicitly supplied controller.
+Continuous improvement is outside the current scope. Its classes and offline
+checks remain in the repository, but the standard launcher does not create a
+controller or show its controls. It is not active in the standard chat.
+The historical checks are recorded in [validation.md](validation.md).
 
-If you explicitly add the controls, Start improvement begins execution, Stop
-improvement stops it, and Inspect improvement opens its cycles. Cancel in the
-chat cancels only the current model run; it does not stop the controller.
-Closing a view also leaves the controller running.
-
-The same behavior is available without a view:
-
-```smalltalk
-session tools: { SmallGPTalkEvaluate new }.
-improvement := SmallGPTalkImprovement forSession: session.
-improvement start.
-"From another process:"
-improvement stop.
-improvement wait.
-improvement cycles last inspect.
-```
-
-Each cycle asks the agent to make one small change, first show a failing test,
-make it pass, and then refactor. Pharo independently runs the loaded
-`SmallGPTalk-Tests` suite after the model run, including after a failed response.
-The cycle retains its `run`, `verification`, and `error`. Verification is an
-evaluation object with its source, actual result, bounded output, and state.
-The default result contains the SUnit result and the failed test names.
-The next prompt includes that verification output as data.
-
-The controller waits 30 seconds between cycles, including failed cycles. It has
-no cycle limit. Stop cancels the active work and prevents the next cycle. Wait
-returns after cleanup; do not call it from the UI process. Foreign calls can
-delay cancellation. Restart keeps previous cycles and conversation history.
-
-Set these options before starting:
-
-```smalltalk
-improvement intervalSeconds: 30.
-improvement verificationTimeoutSeconds: 60.
-"Optional replacement for the default SUnit expression:"
-improvement verificationSource: 'MyTestClass suite run'.
-```
-
-The controller composes sessions, runs, and evaluations. The UI observes it and
-does not own its execution. Supply `view useImprovement: improvement` before
-opening a view for the same session. Fork does not copy an active controller.
-
-Changes remain in the current image. This mode does not export source, commit,
-push, save the image, or provide rollback. The model can modify loaded tests and
-its own code; the independent check runs that current code, not a protected
-reference copy. TDD is requested in the prompt, not enforced by a sandbox.
+File tools, shell tools, other providers, MCP, agent teams, and conversation
+storage are also outside this version. Conversations remain in memory.
 
 ## Open views and observe
 
@@ -352,11 +311,12 @@ stay at the top; Apply selection applies both to future requests. Context usage
 and Compact stay together above the message editor. Send and Cancel sit below
 that editor.
 
-The conversation labels each tool call Assistant and shows it in order, with its identifier, state,
-source, and recorded output or error. Empty assistant replies have no heading.
+The conversation labels each tool call Assistant and shows it in order, with
+its identifier, state, source, and recorded output or error. Empty assistant replies have no heading.
 Tool source and output use literal text. The view does not print the live result
-again. Inspect evaluations still opens the evaluation objects. A notice marks
-truncated output.
+again. Errors from an evaluation use its bounded output too. Inspect evaluations
+still opens the evaluation objects. A notice marks truncated output. The full
+error stays available in the evaluation inspector.
 
 The conversation follows new activity when the view is at the bottom. Scroll
 up to read earlier text without being moved by updates. Return to the bottom
@@ -372,6 +332,15 @@ The script copies a clean Pharo 13 image and loads the current source. It opens
 a chat with the default model, low effort, and evaluate. The account uses the
 stored Keychain record. The script saves the loaded image before account use;
 it does not save the running chat. Each launch uses a separate image copy.
+The launcher does not update an existing window or transfer its conversation.
+Keep that window open if you need its in-memory session.
+
+The launcher uses these exact instructions:
+
+```text
+You are SmallGPTalk, a Smalltalk agent in Pharo.
+Use evaluate to inspect and modify the current Pharo image.
+```
 
 ```smalltalk
 (SmallGPTalkChat forSession: session) open.
