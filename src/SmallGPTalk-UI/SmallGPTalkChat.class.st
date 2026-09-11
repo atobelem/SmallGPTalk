@@ -262,8 +262,8 @@ SmallGPTalkChat >> systemPrompt [
 { #category : 'actions' }
 SmallGPTalkChat >> openSystemPrompt [
  | view |
- view := SpTextPresenter new text: self systemPrompt; beNotEditable; yourself.
+ view := SmallGPTalkPromptEditor forSession: session.
+ view whenSaved: [ self showNextEstimate ].
  view open.
- view window title: 'System prompt'.
  ^ view
 ]

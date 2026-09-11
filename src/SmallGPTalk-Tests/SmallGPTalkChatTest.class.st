@@ -238,3 +238,35 @@ SmallGPTalkChatTest >> testSystemPromptUsesTheCurrentSessionAgent [
   self assert: chat systemPrompt equals: ''
  ] ensure: [ chat disconnect ]
 ]
+
+{ #category : 'tests' }
+SmallGPTalkChatTest >> testPromptDraftChangesTheAgentOnlyWhenSaved [
+ | agent session editor run |
+ modelAction := [ :request | request instructions ].
+ agent := SmallGPTalkAgent named: 'Ada'.
+ agent instructions: 'Original instructions.'.
+ session := agent newSessionWith: self.
+ run := session send: 'First'. run wait.
+ editor := SmallGPTalkPromptEditor forSession: session.
+ self assert: editor text equals: agent instructions.
+ editor text: 'New instructions.'.
+ self assert: agent instructions equals: 'Original instructions.'.
+ editor save.
+ self assert: agent instructions equals: 'New instructions.'.
+ self assert: run exchange context instructions equals: 'Original instructions.'.
+ run := session send: 'Second'. run wait.
+ self assert: run result equals: 'New instructions.'.
+ editor text: ''. editor save.
+ self assert: agent instructions equals: ''
+]
+
+{ #category : 'tests' }
+SmallGPTalkChatTest >> testSavingAPromptCreatesAnAgentOnlyWhenNeeded [
+ | session editor |
+ session := SmallGPTalkSession withModel: self.
+ editor := SmallGPTalkPromptEditor forSession: session.
+ editor text: 'Use the image.'.
+ self assert: session agent isNil.
+ editor save.
+ self assert: session agent instructions equals: 'Use the image.'
+]

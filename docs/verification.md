@@ -70,14 +70,14 @@ the test record. This check uses invented data, not the account record.
 ## Latest results
 
 The latest offline and native checks passed on 2026-09-11.
-Local logs are in `.build/verify-b5fdcimj/`.
+Local logs are in `.build/verify-uxpqzfch/`.
 
 | Check | Result |
 | --- | --- |
-| SUnit | 208 passes, no failures or errors |
-| Loaded source | 73 classes, 731 methods; no undeclared references or missing self/super messages |
+| SUnit | 210 passes, no failures or errors |
+| Loaded source | 74 classes, 742 methods; no undeclared references or missing self/super messages |
 | Core alone | Named-agent session and independent fork passed |
-| Native views | Chat, read-only system prompt, running preview, context estimate, and evaluation checks passed |
+| Native views | Chat, system prompt draft and Save, running preview, context estimate, and evaluation checks passed |
 | Earlier live session (`b9589bc`) | Evaluation, automatic compaction, fork, manual compaction, and continuation passed with one independently verified mutation |
 
 Live account checks were not repeated for this UI change. The earlier live session used `gpt-5.6-luna`, effort `low`, and the exact two-line

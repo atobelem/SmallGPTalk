@@ -46,9 +46,12 @@ number factorial. "720"
      World imageForm writePNGFileNamed: (output / 'window.png') fullName.
      promptView := second openSystemPrompt.
      promptView text asString = session agent instructions ifFalse: [ Error signal: 'The system prompt is incorrect.' ].
-     promptView isEditable ifTrue: [ Error signal: 'The system prompt must be read only.' ].
+     promptView text: 'Changed in the prompt editor.'.
+     session agent instructions = 'Changed in the prompt editor.' ifTrue: [ Error signal: 'The draft was applied before Save.' ].
+     promptView save.
+     session agent instructions = promptView text ifFalse: [ Error signal: 'The prompt was not saved.' ].
      World imageForm writePNGFileNamed: (output / 'system-prompt.png') fullName.
-     Stdio stdout nextPutAll: 'PASS: native system prompt text and read-only view.'; lf.
+     Stdio stdout nextPutAll: 'PASS: native system prompt draft and save.'; lf.
      Smalltalk snapshot: false andQuit: true
      ] on: Error do: [ :error | Stdio stdout nextPutAll: error description; lf. Smalltalk exit: 1 ] ] ] fork
   ] on: Error do: [ :error |

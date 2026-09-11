@@ -310,10 +310,13 @@ storage are outside this version. Conversations remain in memory.
 
 ## Open views and observe
 
-The **System prompt** button opens the current agent instructions as read-only
-text. You can select and copy the text. Reopen the window after changing the
-agent instructions to see their current value. For the instructions captured
-by a past request, use **Inspect context**.
+The **System prompt** button opens an editable draft of the current agent
+instructions. Press **Save** to apply the draft to future requests. Closing
+the editor without saving discards the draft. Active requests keep their
+captured instructions. Sessions and forks that share the agent use its saved
+instructions on future requests. Changes stay in memory; they do not change
+the launcher default. For the instructions captured by a past request, use
+**Inspect context**.
 
 The chat places history and selected-exchange actions in a left column. The
 conversation and message editor use the main area. Model and effort selection
