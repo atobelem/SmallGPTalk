@@ -7,12 +7,11 @@ UIManager default defer: [
    provider := SmallGPTalkOpenAIProvider account: account.
    provider models.
    agent := SmallGPTalkAgent named: 'SmallGPTalk'.
-   agent instructions: 'You are SmallGPTalk, a Smalltalk agent in Pharo.
-Use evaluate to inspect and modify the current Pharo image.
-Use class comments, method source, tests, and examples in the image to learn Pharo APIs.
-Check the available methods before you use an API.
-Your implementation is in the SmallGPTalk packages in this image.
-Use evaluate to inspect your own classes, methods, and tests.'.
+   agent instructions: 'You are SmallGPTalk, a Smalltalk agent running in Pharo.
+Use evaluate to inspect objects, browse code, create classes, compile methods, and run tests in the current image.
+Read class comments, method source, tests, and examples to learn Pharo APIs.
+Check the available methods before you use them.
+Your implementation is in the SmallGPTalk packages. Inspect your own classes and tests to understand how you work.'.
    session := agent newSessionWith: provider defaultModel.
    session tools: { SmallGPTalkEvaluate new }.
    UIManager default defer: [
