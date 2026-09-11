@@ -11,6 +11,7 @@ SmallGPTalkMessageText class >> from: source [ ^ self new from: source ]
 
 { #category : 'rendering' }
 SmallGPTalkMessageText class >> message: source role: role [
+ source trimBoth ifEmpty: [ ^ '' asText ].
  ^ (role asText addAttribute: TextEmphasis bold; yourself), String cr asText,
   (self from: source), (String cr, String cr) asText
 ]
@@ -21,7 +22,9 @@ SmallGPTalkMessageText class >> forExchange: exchange [
  text := self message: exchange request role: 'You'.
  exchange replies do: [ :reply |
   (reply isKindOf: SmallGPTalkReply)
-   ifTrue: [ text := text, (self message: reply text role: 'Assistant') ]
+   ifTrue: [
+    text := text, (self message: reply text role: 'Assistant').
+    reply calls do: [ :call | text := text, (self forCall: call) ] ]
    ifFalse: [ reply isString ifTrue: [ text := text, (self message: reply role: 'Assistant') ] ] ].
  exchange partialText ifNotEmpty: [ :draft |
   text := text, (self message: draft role: 'Assistant (in progress)') ].
@@ -91,3 +94,29 @@ SmallGPTalkMessageText >> visitMath: node [ canvas << node body asText ]
 
 { #category : 'visiting' }
 SmallGPTalkMessageText >> visitMathInline: node [ canvas << node bodyString asText ]
+
+
+{ #category : 'rendering' }
+SmallGPTalkMessageText class >> forCall: call [
+ | text arguments source output |
+ text := (call name, ' #', call id, ' — ', call state asString) asText
+  addAttribute: TextEmphasis bold; yourself.
+ arguments := call arguments.
+ source := arguments isDictionary ifTrue: [ arguments at: 'source' ifAbsent: [ nil ] ] ifFalse: [ nil ].
+ source isString ifFalse: [
+  source := [ STONJSON toString: arguments ] on: Error do: [ :error | 'Cannot display arguments.' ] ].
+ text := text, String cr asText, (self literal: source role: 'Source').
+ output := call error ifNil: [ call operation ifNotNil: [ :operation | operation output ] ].
+ output ifNotNil: [
+  output ifNotEmpty: [ text := text, (self literal: output role: 'Output') ] ].
+ (call operation notNil and: [ (call operation respondsTo: #truncated) and: [ call operation truncated ] ])
+  ifTrue: [ text := text, 'Output truncated. Inspect the value for more detail.' asText, String cr asText ].
+ ^ text, String cr asText
+]
+
+{ #category : 'rendering' }
+SmallGPTalkMessageText class >> literal: source role: role [
+ ^ (role asText addAttribute: TextEmphasis bold; yourself), String cr asText,
+  (source asText addAttribute: (TextFontReference toFont: StandardFonts codeFont); yourself),
+  (String cr, String cr) asText
+]

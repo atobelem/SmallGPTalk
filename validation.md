@@ -1,14 +1,15 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 190 offline
-tests with seed 817845566. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 192 offline
+tests with seed 1044911431. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 ## Recent TDD evidence
 
 | Behavior | Before the change | After the change |
 | --- | --- | --- |
+| Tool activity in the conversation | 192 tests, one failure and one error | 192 passed; native view checked |
 | Occupied login port | 108 tests, one failure | 108 passed |
 | Authorization refusal | 110 tests, one failure | 111 passed, including operation integration |
 | Compaction within a tool turn | 113 tests, two failures | 115 passed, including cancellation and repeated identifiers |
@@ -262,3 +263,14 @@ measurements, and a draft. The screenshot `.build/chat-layout.png` was inspected
 for control placement and clipping. History and inspection actions occupy the
 left column; the conversation and editor occupy the main area. No font size or
 execution behavior was changed.
+
+## Tool activity in the conversation
+
+The renderer shows tool calls in reply order. Tests cover pending, running,
+completed, cancelled, and failed calls. The ordered-call test checks source,
+output, and the final assistant message. Empty replies retain their calls
+without an empty assistant heading. A separate Pharo 13 image rendered three
+evaluations in the native chat. The image closed without saving.
+
+Local evidence: `.build/tool-activity-red.log`,
+`.build/tool-activity-green.log`, and `.build/tool-activity-preview/preview.png`.

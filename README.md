@@ -352,6 +352,12 @@ stay at the top; Apply selection applies both to future requests. Context usage
 and Compact stay together above the message editor. Send and Cancel sit below
 that editor.
 
+The conversation shows each tool call in order, with its identifier, state,
+source, and recorded output or error. Empty assistant replies have no heading.
+Tool source and output use literal text. The view does not print the live result
+again. Inspect evaluations still opens the evaluation objects. A notice marks
+truncated output.
+
 To open a new chat from the terminal after login:
 
 ```sh

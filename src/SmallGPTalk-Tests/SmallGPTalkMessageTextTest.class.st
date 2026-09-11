@@ -47,3 +47,59 @@ SmallGPTalkMessageTextTest >> testImageMarkupShowsItsLabelWithoutFetchingTheReso
   self assert: requests equals: 0
  ] ensure: [ server stop ]
 ]
+
+{ #category : 'model protocol' }
+SmallGPTalkMessageTextTest >> respondTo: request [
+ requests := requests + 1.
+ requests = 4 ifTrue: [ ^ SmallGPTalkReply text: 'Fibonacci example.' calls: #() ].
+ ^ SmallGPTalkReply text: (requests = 2 ifTrue: [ '  ', String lf ] ifFalse: [ '' ])
+  calls: { SmallGPTalkCall id: requests asString name: 'evaluate' arguments:
+   (Dictionary new at: 'source' put: '6 factorial'; yourself) }
+]
+
+{ #category : 'tests' }
+SmallGPTalkMessageTextTest >> testToolOnlyRepliesShowEvaluationsInOrder [
+ | session run text first second third assistant snapshots |
+ requests := 0.
+ session := SmallGPTalkSession withModel: self.
+ session tools: { SmallGPTalkEvaluate new }.
+ snapshots := OrderedCollection new.
+ session whenChanged: [ :exchange | snapshots add: (SmallGPTalkMessageText forExchange: exchange) asString ].
+ run := session send: 'Make Fibonacci'. run wait.
+ self assert: run state equals: #completed.
+ text := SmallGPTalkMessageText forExchange: run exchange.
+ first := text asString findString: 'evaluate #1 — completed'.
+ second := text asString findString: 'evaluate #2 — completed'.
+ third := text asString findString: 'evaluate #3 — completed'.
+ assistant := text asString findString: 'Assistant'.
+ self assert: first > 0.
+ self assert: second > first.
+ self assert: third > second.
+ self assert: assistant > third.
+ self assert: (text asString findString: 'Assistant' startingAt: assistant + 1) equals: 0.
+ self assert: (text asString includesSubstring: '6 factorial').
+ self assert: (text asString includesSubstring: '720').
+ self assert: (text asString includesSubstring: 'Fibonacci example.').
+ self assert: (snapshots anySatisfy: [ :snapshot | snapshot includesSubstring: 'evaluate #1 — running' ]).
+ self assert: run exchange replies size equals: 4.
+ self assert: run exchange calls size equals: 3.
+ self assert: (run exchange calls allSatisfy: [ :call | call state = #completed ])
+]
+
+
+{ #category : 'tests' }
+SmallGPTalkMessageTextTest >> testPendingCancelledAndFailedCallsRemainVisible [
+ | call text |
+ call := SmallGPTalkCall id: 'pending' name: 'evaluate' arguments:
+  (Dictionary new at: 'source' put: '6 factorial'; yourself).
+ text := SmallGPTalkMessageText forCall: call.
+ self assert: (text asString includesSubstring: 'pending').
+ self assert: (text asString includesSubstring: '6 factorial').
+ call cancelIfPending.
+ self assert: ((SmallGPTalkMessageText forCall: call) asString includesSubstring: 'cancelled').
+ call := SmallGPTalkCall id: 'failed' name: 'missing' arguments: Dictionary new.
+ call executeWith: #().
+ text := SmallGPTalkMessageText forCall: call.
+ self assert: (text asString includesSubstring: 'failed').
+ self assert: (text asString includesSubstring: call error)
+]
