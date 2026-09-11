@@ -1,5 +1,9 @@
 # Source review — 2026-09-11
 
+The current ten-principle audit is in
+[docs/principles-audit.md](docs/principles-audit.md). It identifies one open
+request-snapshot defect at revision `4d24a9f`. The sections below are historical.
+
 This review started at `cfa1d90` on `main`. It covers all 70 Tonel classes,
 the package declarations, all 22 scripts, and the project documents. The
 review read the source and tests, traced the object collaborations, and

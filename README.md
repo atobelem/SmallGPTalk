@@ -37,6 +37,8 @@ model request. Live checks also passed evaluation, automatic compaction within
 a tool turn, fork, and continuation without a repeated mutation.
 The current offline suite has 203 passing tests. See [review.md](review.md)
 for the complete source review and its corrections.
+See [the ten-principle audit](docs/principles-audit.md) for the current design
+assessment and the open compaction defect.
 See [validation.md](validation.md) for evidence and validation limits.
 See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.
 

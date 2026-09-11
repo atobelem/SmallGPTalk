@@ -2,7 +2,7 @@
 
 These results belong to this rewrite, not to the archived implementation.
 The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 203 offline
-tests with seed 904249668. The historical cancellation timeout and a separate
+tests with seed 904249666. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -430,3 +430,13 @@ All 203 tests passed in a clean image with seed 904249668
 718 methods with zero issues (`.build/test-protocols-source.log`). Production
 source did not change. Native and live checks were not repeated for this
 change to tests.
+
+## Ten-principle audit
+
+The audit at `4d24a9f` read all 71 classes and 20 scripts. All 203 tests passed
+with seed 904249666. Loaded-source and Core-only checks passed. Separate probes
+reproduced an active request taking changed agent instructions after automatic
+compaction. The suite does not cover that defect yet. Two other observed
+behaviors match explicit README constraints and are not classified as defects.
+See [the audit](docs/principles-audit.md) for the ten assessments, reproduction,
+source inventory, evidence paths, and limits. Production source was not changed.
