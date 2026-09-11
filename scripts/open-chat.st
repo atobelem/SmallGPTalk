@@ -7,7 +7,8 @@ UIManager default defer: [
    provider := SmallGPTalkOpenAIProvider account: account.
    provider models.
    agent := SmallGPTalkAgent named: 'SmallGPTalk'.
-   agent instructions: 'You are SmallGPTalk, a Smalltalk agent in Pharo. Use evaluate for image operations. Do not repeat completed changes. Use simplified English.'.
+   agent instructions: 'You are SmallGPTalk, a Smalltalk agent in Pharo.
+Use evaluate to inspect and modify the current Pharo image.'.
    session := agent newSessionWith: provider defaultModel.
    session tools: { SmallGPTalkEvaluate new }.
    UIManager default defer: [
