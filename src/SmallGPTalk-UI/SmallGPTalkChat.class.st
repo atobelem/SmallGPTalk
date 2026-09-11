@@ -1,0 +1,199 @@
+"A detachable view of a session. The session owns all execution and history."
+Class {
+ #name : 'SmallGPTalkChat',
+ #superclass : 'SpPresenter',
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector' ],
+ #category : 'SmallGPTalk-UI'
+}
+
+{ #category : 'instance creation' }
+SmallGPTalkChat class >> forSession: session [
+ ^ self new connectTo: session; yourself
+]
+
+{ #category : 'instance creation' }
+SmallGPTalkChat class >> forSession: session provider: provider [
+ ^ (self forSession: session) useProvider: provider; yourself
+]
+
+{ #category : 'configuration' }
+SmallGPTalkChat >> useProvider: aProvider [
+ provider := aProvider.
+ modelSelector := self instantiate: SmallGPTalkModelSelector.
+ modelSelector models: provider models; onChoose: [ :identifier :effort |
+  self performAction: [ session useModel: (provider model: identifier effort: effort) ] ].
+ self selectCurrentModel
+]
+
+{ #category : 'private' }
+SmallGPTalkChat >> selectCurrentModel [
+ modelSelector ifNil: [ ^ self ].
+ ((session model respondsTo: #identifier) and: [ session model respondsTo: #effort ]) ifTrue: [
+  modelSelector selectModel: session model identifier effort: session model effort ]
+ ifFalse: [ modelSelector selectModel: nil effort: nil ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> modelSelector [ ^ modelSelector ]
+
+{ #category : 'initialization' }
+SmallGPTalkChat >> initializePresenters [
+ exchanges := self newList.
+ exchanges display: [ :exchange | exchange state asString, ' — ', (exchange request contractTo: 100) ].
+ exchanges whenSelectionChangedDo: [ self showSelection ].
+ details := self newText beNotEditable.
+ input := self newText.
+ cancel := self newButton label: 'Cancel'; action: [ self cancelRun ]; yourself.
+ send := self newButton label: 'Send'; action: [ self sendMessage ]; yourself.
+ inspect := self newButton label: 'Inspect exchange'; action: [ self selectedExchange ifNotNil: #inspect ]; yourself.
+ inspectContext := self newButton label: 'Inspect context'; action: [ self selectedExchange ifNotNil: [ :exchange | exchange modelContext inspect ] ]; yourself.
+ inspectCalls := self newButton label: 'Inspect evaluations'; action: [ self selectedExchange ifNotNil: [ :exchange | (SmallGPTalkEvaluations forExchange: exchange) open ] ]; yourself.
+ compact := self newButton label: 'Compact'; action: [ self performAction: [ session compact. self refresh ] ]; yourself.
+ fork := self newButton label: 'Fork here'; action: [ self performAction: [
+  self selectedExchange ifNotNil: [ :exchange | self openForkAt: exchange ] ] ]; yourself.
+ usage := self newLabel.
+ status := self newLabel
+]
+
+{ #category : 'layout' }
+SmallGPTalkChat >> defaultLayout [
+ | layout |
+ layout := SpBoxLayout newVertical spacing: 6.
+ modelSelector ifNotNil: [ layout add: modelSelector height: 30 ].
+ ^ layout
+  add: usage expand: false;
+  add: exchanges height: 140;
+  add: details;
+  add: (SpBoxLayout newHorizontal add: inspect; add: inspectContext; add: inspectCalls; yourself) height: 30;
+  add: input height: 90;
+  add: (SpBoxLayout newHorizontal add: send; add: cancel; add: compact; add: fork; yourself) height: 30;
+  add: status expand: false;
+  yourself
+]
+
+{ #category : 'initialization' }
+SmallGPTalkChat >> initializeWindow: window [
+ super initializeWindow: window.
+ window title: 'SmallGPTalk'; initialExtent: 800 @ 700;
+  whenClosedDo: [ self disconnect ]
+]
+
+{ #category : 'connection' }
+SmallGPTalkChat >> connectTo: aSession [
+ | subscription |
+ self disconnect.
+ session := aSession.
+ subscription := session whenChanged: [ :exchange |
+  self application defer: [ self refreshFor: exchange from: subscription ] ].
+ observer := subscription.
+ exchanges items: #().
+ status label: ''.
+ self selectCurrentModel.
+ self refresh
+]
+
+{ #category : 'actions' }
+SmallGPTalkChat >> openForkAt: exchange [
+ | view |
+ view := self class forSession: (session forkAt: exchange).
+ provider ifNotNil: [ view useProvider: provider ].
+ view open
+]
+
+{ #category : 'updating' }
+SmallGPTalkChat >> refreshFor: exchange from: subscription [
+ (subscription notNil and: [ observer == subscription ]) ifTrue: [
+  self refreshFor: exchange ]
+]
+
+{ #category : 'connection' }
+SmallGPTalkChat >> disconnect [
+ observer ifNotNil: [ session removeObserver: observer. observer := nil ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> session [ ^ session ]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> selectedExchange [ ^ exchanges selectedItem ]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> contextText [ ^ usage label ]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> statusText [ ^ status label ]
+
+{ #category : 'updating' }
+SmallGPTalkChat >> refreshFor: exchange [
+ self refresh.
+ exchange context isCompaction ifTrue: [
+  status label: 'Compaction ', exchange state asString,
+   (exchange error ifNil: [ '.' ] ifNotNil: [ :error | ': ', error ]) ]
+]
+
+{ #category : 'updating' }
+SmallGPTalkChat >> refresh [
+ | history selected follow |
+ session ifNil: [ ^ self ].
+ selected := self selectedExchange.
+ follow := selected isNil or: [ exchanges items notEmpty and: [ selected == exchanges items last ] ].
+ history := session conversation.
+ exchanges items: history.
+ history ifNotEmpty: [
+  follow ifTrue: [ exchanges selectIndex: history size scrollToSelection: true ]
+   ifFalse: [ self selectExchange: selected ] ].
+ self showSelection
+]
+
+{ #category : 'updating' }
+SmallGPTalkChat >> showSelection [
+ | exchange |
+ exchange := self selectedExchange.
+ self showContextUsage.
+ exchange ifNil: [ details text: ''. ^ self ].
+ details text: (SmallGPTalkMessageText forExchange: exchange)
+]
+
+{ #category : 'updating' }
+SmallGPTalkChat >> showContextUsage [
+ | exchange percentage measured |
+ exchange := self selectedExchange.
+ exchange ifNil: [ usage label: 'Context: no request selected'. ^ self ].
+ measured := exchange modelUsage.
+ measured ifNotNil: [
+  usage label: 'Context: ', measured percentage asString, '% (', measured inputTokens asString,
+   ' / ', measured capacity asString, ' input tokens)'.
+  ^ self ].
+ percentage := session context usageFor: exchange modelContext.
+ usage label: (percentage ifNil: [ 'Context: no character limit' ]
+  ifNotNil: [ 'Context: ', percentage asString, '% of character limit' ])
+]
+
+{ #category : 'actions' }
+SmallGPTalkChat >> sendMessage [
+ input text trimBoth ifEmpty: [ ^ self ].
+ self performAction: [
+  input text trimBoth = '/compact'
+   ifTrue: [ session compact ]
+   ifFalse: [ session send: input text ].
+  input text: ''.
+  self refresh ]
+]
+
+{ #category : 'private' }
+SmallGPTalkChat >> performAction: aBlock [
+ [ aBlock value. status label: '' ]
+  on: Error , Halt do: [ :error | status label: error messageText ]
+]
+
+{ #category : 'actions' }
+SmallGPTalkChat >> cancelRun [
+ self performAction: [ session cancel. self refresh ]
+]
+
+{ #category : 'selection' }
+SmallGPTalkChat >> selectExchange: exchange [
+ | index |
+ index := exchanges items identityIndexOf: exchange.
+ index > 0 ifTrue: [ exchanges selectIndex: index scrollToSelection: true ]
+]
