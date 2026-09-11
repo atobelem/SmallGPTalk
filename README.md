@@ -346,6 +346,12 @@ reference copy. TDD is requested in the prompt, not enforced by a sandbox.
 
 ## Open views and observe
 
+The chat places history and selected-exchange actions in a left column. The
+conversation and message editor use the main area. Model and effort selection
+stay at the top; Apply selection applies both to future requests. Context usage
+and Compact stay together above the message editor. Send and Cancel sit below
+that editor.
+
 To open a new chat from the terminal after login:
 
 ```sh
@@ -369,11 +375,11 @@ To include model and effort selection, supply the provider:
 ```
 
 The selector lists the supplied catalog descriptions. Select a model and
-effort, then press Use model. Selection alone does not change the session.
+effort, then press Apply selection. Selection alone does not change the session.
 The change applies to future requests and preserves history. An active run
 prevents changing the model. Fork windows keep the provider selector.
 Read the provider catalog before opening the view to avoid a network wait
-while the UI is being built. Each view keeps its own selection before Use model;
+while the UI is being built. Each view keeps its own selection before Apply selection;
 the session's model is the applied configuration.
 
 Both views use the same session. Closing a view removes its observer and keeps
@@ -391,10 +397,10 @@ The list follows the latest exchange unless an earlier
 exchange is selected. Reconnecting a view clears its selection and status;
 queued notifications from its old subscription cannot update the new view.
 If the new session's model has no identifier and effort protocol, reconnection
-clears the old model selection. Use model then has no effect until a new
+clears the old model selection. Apply selection then has no effect until a new
 selection is made.
 Inspect context and the usage indicator use the selected
-exchange's last model context. Fork here opens an independent session view.
+exchange's last model context. Fork from here opens an independent session view.
 
 ```smalltalk
 observer := session whenFinished: [ :completedRun | completedRun state ].

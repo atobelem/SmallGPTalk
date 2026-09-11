@@ -39,7 +39,7 @@ SmallGPTalkChat >> modelSelector [ ^ modelSelector ]
 { #category : 'initialization' }
 SmallGPTalkChat >> initializePresenters [
  exchanges := self newList.
- exchanges display: [ :exchange | exchange state asString, ' — ', (exchange request contractTo: 100) ].
+ exchanges display: [ :exchange | (exchange request contractTo: 60), ' — ', exchange state asString ].
  exchanges whenSelectionChangedDo: [ self showSelection ].
  details := self newText beNotEditable.
  input := self newText.
@@ -49,7 +49,7 @@ SmallGPTalkChat >> initializePresenters [
  inspectContext := self newButton label: 'Inspect context'; action: [ self selectedExchange ifNotNil: [ :exchange | exchange modelContext inspect ] ]; yourself.
  inspectCalls := self newButton label: 'Inspect evaluations'; action: [ self selectedExchange ifNotNil: [ :exchange | (SmallGPTalkEvaluations forExchange: exchange) open ] ]; yourself.
  compact := self newButton label: 'Compact'; action: [ self performAction: [ session compact. self refresh ] ]; yourself.
- fork := self newButton label: 'Fork here'; action: [ self performAction: [
+ fork := self newButton label: 'Fork from here'; action: [ self performAction: [
   self selectedExchange ifNotNil: [ :exchange | self openForkAt: exchange ] ] ]; yourself.
  usage := self newLabel.
  status := self newLabel.
@@ -60,25 +60,48 @@ SmallGPTalkChat >> initializePresenters [
 { #category : 'layout' }
 SmallGPTalkChat >> defaultLayout [
  | layout |
- layout := SpBoxLayout newVertical spacing: 6.
+ layout := SpBoxLayout newVertical spacing: 8; borderWidth: 8.
  modelSelector ifNotNil: [ layout add: modelSelector height: 30 ].
  improvementControls ifNotNil: [ layout add: improvementControls height: 60 ].
- ^ layout
-  add: usage expand: false;
-  add: nextUsage expand: false;
-  add: exchanges height: 140;
+ ^ layout add: (SpBoxLayout newHorizontal spacing: 12;
+  add: self historyLayout width: 210;
+  add: self conversationLayout;
+  yourself); yourself
+]
+
+{ #category : 'layout' }
+SmallGPTalkChat >> historyLayout [
+ ^ SpBoxLayout newVertical spacing: 6;
+  add: (self newLabel label: 'History') expand: false;
+  add: exchanges;
+  add: (self newLabel label: 'Selected exchange') expand: false;
+  add: inspect height: 28;
+  add: inspectContext height: 28;
+  add: inspectCalls height: 28;
+  add: fork height: 28;
+  yourself
+]
+
+{ #category : 'layout' }
+SmallGPTalkChat >> conversationLayout [
+ ^ SpBoxLayout newVertical spacing: 6;
+  add: (self newLabel label: 'Conversation') expand: false;
   add: details;
-  add: (SpBoxLayout newHorizontal add: inspect; add: inspectContext; add: inspectCalls; yourself) height: 30;
-  add: input height: 90;
-  add: (SpBoxLayout newHorizontal add: send; add: cancel; add: compact; add: fork; yourself) height: 30;
-  add: status expand: false;
+  add: (SpBoxLayout newHorizontal spacing: 8;
+   add: (SpBoxLayout newVertical add: usage; add: nextUsage; yourself);
+   add: compact width: 90;
+   yourself) height: 44;
+  add: (self newLabel label: 'Your message') expand: false;
+  add: input height: 110;
+  add: (SpBoxLayout newHorizontal spacing: 6;
+   add: status; add: cancel width: 90; add: send width: 90; yourself) height: 30;
   yourself
 ]
 
 { #category : 'initialization' }
 SmallGPTalkChat >> initializeWindow: window [
  super initializeWindow: window.
- window title: 'SmallGPTalk'; initialExtent: 800 @ 700;
+ window title: 'SmallGPTalk'; initialExtent: 940 @ 700;
   whenClosedDo: [ self disconnect ]
 ]
 

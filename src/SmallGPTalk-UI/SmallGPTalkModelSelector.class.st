@@ -10,7 +10,7 @@ Class {
 SmallGPTalkModelSelector >> initializePresenters [
  models := self newDropList display: [ :description | description identifier ]; yourself.
  efforts := self newDropList.
- apply := self newButton label: 'Use model'; action: [ self applySelection ]; yourself.
+ apply := self newButton label: 'Apply selection'; action: [ self applySelection ]; yourself.
  models whenSelectedItemChangedDo: [ self updateEfforts ].
  efforts whenSelectedItemChangedDo: [ self updateApply ].
  self updateApply
@@ -23,7 +23,7 @@ SmallGPTalkModelSelector >> defaultLayout [
   add: models;
   add: (self newLabel label: 'Effort') width: 40;
   add: efforts width: 100;
-  add: apply width: 100; yourself
+  add: apply width: 120; yourself
 ]
 
 { #category : 'configuration' }

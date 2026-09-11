@@ -252,3 +252,13 @@ A live request passed and recorded 12 input tokens. The next draft estimate was
 and 712 methods with no undeclared references or missing self/super sends.
 These are example checks, not evidence that the byte heuristic equals the
 provider tokenizer.
+
+
+## Chat layout update
+
+The existing 190 tests passed after the layout change (seed 658237766). A native
+preview used three exchanges, a Smalltalk code block, model selection, context
+measurements, and a draft. The screenshot `.build/chat-layout.png` was inspected
+for control placement and clipping. History and inspection actions occupy the
+left column; the conversation and editor occupy the main area. No font size or
+execution behavior was changed.
