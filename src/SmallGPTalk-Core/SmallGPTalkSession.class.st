@@ -1,201 +1,186 @@
-"Own model configuration, committed conversation, tools, and one active run."
+"Coordinate requests to a model and retain their exchanges."
 Class {
-	#name : #SmallGPTalkSession,
-	#superclass : #Object,
-	#instVars : [ 'agent', 'provider', 'model', 'reasoningEffort', 'conversation', 'context', 'instructions', 'tools', 'maxTurns', 'requestTimeoutSeconds', 'toolOutputLimit', 'activeRun', 'lock' ],
-	#category : #'SmallGPTalk-Core'
+ #name : 'SmallGPTalkSession',
+ #superclass : 'Object',
+ #instVars : [ 'model', 'agent', 'exchanges', 'activeRun', 'lock', 'tools', 'maxTurns', 'requestLimit', 'context', 'observers', 'changes' ],
+ #category : 'SmallGPTalk-Core'
 }
 
-{ #category : #'initialization' }
+{ #category : 'instance creation' }
+SmallGPTalkSession class >> withModel: aModel [
+ ^ self new useModel: aModel; yourself
+]
+
+{ #category : 'initialization' }
 SmallGPTalkSession >> initialize [
-	super initialize.
-	conversation := SmallGPTalkConversation new.
-	context := SmallGPTalkContext forSession: self.
-	agent := SmallGPTalkAgent new.
-	instructions := agent instructions.
-	tools := agent newTools.
-	reasoningEffort := 'medium'.
-	maxTurns := 20.
-	requestTimeoutSeconds := 120.
-	toolOutputLimit := 20000.
-	lock := Semaphore forMutualExclusion
+ super initialize.
+ exchanges := OrderedCollection new.
+ context := SmallGPTalkContext new.
+ observers := SmallGPTalkObservers new.
+ changes := SmallGPTalkObservers new.
+ tools := #().
+ maxTurns := 20.
+ requestLimit := SmallGPTalkTimeLimit seconds: 120.
+ lock := Semaphore forMutualExclusion
 ]
 
-{ #category : #'running' }
-SmallGPTalkSession >> send: aString onEvent: aBlock [
-	^ self startRun: (SmallGPTalkRun new input: aString; yourself) onEvent: aBlock
+{ #category : 'initialization' }
+SmallGPTalkSession >> useModel: aModel [
+ lock critical: [
+  activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
+  model := aModel ]
 ]
 
-{ #category : 'running' }
-SmallGPTalkSession >> compactOnEvent: aBlock [
-	^ self startRun: SmallGPTalkCompactionRun new onEvent: aBlock
+{ #category : 'accessing' }
+SmallGPTalkSession >> model [ ^ model ]
+
+{ #category : 'initialization' }
+SmallGPTalkSession >> useAgent: anAgent [
+ agent := anAgent
+]
+
+{ #category : 'sending' }
+SmallGPTalkSession >> send: request [
+ ^ lock critical: [
+  | exchange run |
+  activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
+  exchange := SmallGPTalkExchange request: ((context requestFor: request history: exchanges agent: agent) withTools: tools).
+  exchange rememberCallsFrom: exchanges.
+  exchange reportTo: changes.
+  run := SmallGPTalkRun on: exchange.
+  exchanges add: exchange.
+  activeRun := run.
+  run start: [
+   changes notify: exchange.
+   self prepareContextFor: exchange during: run.
+   (self workFor: exchange during: run) value ] whenFinished: [ self release: run ].
+  run ]
 ]
 
 { #category : 'private' }
-SmallGPTalkSession >> startRun: run onEvent: aBlock [
-	run session: self; observer: aBlock.
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'This session has an active run.' ].
-		self validateConfiguration.
-		run reserveResources.
-		activeRun := run ].
-	[ run start ] on: Error do: [ :exception |
-		self releaseRun: run.
-		run releaseResources.
-		exception pass ].
-	^ run
-]
-
-{ #category : #'private' }
-SmallGPTalkSession >> validateConfiguration [
-	provider ifNil: [ self error: 'Set a model provider.' ].
-	(model isString and: [ model isNotEmpty ]) ifFalse: [ self error: 'Set an explicit model identifier.' ].
-	(maxTurns isInteger and: [ maxTurns > 0 ]) ifFalse: [ self error: 'The turn limit must be a positive integer.' ].
-	(requestTimeoutSeconds isNumber and: [ requestTimeoutSeconds > 0 ]) ifFalse: [ self error: 'The request timeout must be positive.' ].
-	(toolOutputLimit isInteger and: [ toolOutputLimit > 0 ]) ifFalse: [ self error: 'The tool output limit must be a positive integer.' ].
-	(tools collect: #name) asSet size = tools size ifFalse: [ self error: 'Tool names must be unique.' ]
-]
-
-{ #category : #'private' }
-SmallGPTalkSession >> releaseRun: aRun [
-	lock critical: [ activeRun == aRun ifTrue: [ activeRun := nil ] ]
-]
-
-{ #category : #'private' }
-SmallGPTalkSession >> addMessage: aMessage [
-	conversation addMessage: aMessage
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> messages [
-	^ conversation messages
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> activeRun [
-	^ activeRun
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> provider [
-	^ provider
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> provider: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		provider := anObject ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> model [
-	^ model
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> model: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		model := anObject ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> instructions [
-	^ instructions
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> instructions: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		instructions := anObject ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> tools [
-	^ tools copy
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> tools: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		tools := anObject asArray copy ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> maxTurns [
-	^ maxTurns
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> maxTurns: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		maxTurns := anObject ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> requestTimeoutSeconds [
-	^ requestTimeoutSeconds
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> requestTimeoutSeconds: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		requestTimeoutSeconds := anObject ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> toolOutputLimit [
-	^ toolOutputLimit
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> toolOutputLimit: anObject [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		toolOutputLimit := anObject ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> agent [
-	^ agent
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> agent: anAgent [
-	| newInstructions newTools |
-	lock critical: [
-		(activeRun isNotNil or: [ conversation isEmpty not ]) ifTrue: [
-			self error: 'Set the agent before the conversation starts.' ].
-		newInstructions := anAgent instructions.
-		newTools := anAgent newTools.
-		agent := anAgent.
-		instructions := newInstructions.
-		tools := newTools ]
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> reasoningEffort [
-	^ reasoningEffort
-]
-
-{ #category : #'accessing' }
-SmallGPTalkSession >> reasoningEffort: aString [
-	lock critical: [
-		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
-		(aString isString and: [ aString isNotEmpty ])
-			ifFalse: [ self error: 'Select a valid reasoning effort.' ].
-		reasoningEffort := aString ]
+SmallGPTalkSession >> release: run [
+ lock critical: [ activeRun == run ifTrue: [ activeRun := nil ] ].
+ changes notify: run exchange.
+ observers notify: run
 ]
 
 { #category : 'accessing' }
 SmallGPTalkSession >> conversation [
-	^ conversation
+ ^ lock critical: [ exchanges copy ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkSession >> agent [ ^ agent ]
+
+{ #category : 'configuration' }
+SmallGPTalkSession >> tools: supplied [
+ lock critical: [
+  activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
+  tools := supplied asArray copy ]
+]
+
+{ #category : 'configuration' }
+SmallGPTalkSession >> maxTurns: count [
+ lock critical: [
+  activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
+  (count isInteger and: [ count > 0 ]) ifFalse: [ self error: 'The model request limit must be a positive integer.' ].
+  maxTurns := count ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkSession >> maxTurns [ ^ maxTurns ]
+
+{ #category : 'copying' }
+SmallGPTalkSession >> forkAt: point [
+ ^ lock critical: [
+  | index history |
+  index := exchanges identityIndexOf: point.
+  index = 0 ifTrue: [ self error: 'Choose an exchange from this session.' ].
+  point isFinished ifFalse: [ self error: 'Choose a finished exchange.' ].
+  history := OrderedCollection new.
+  (exchanges first: index) do: [ :exchange |
+   history add: (exchange copyWithHistory: history) ].
+  (self class withModel: model)
+   useAgent: agent; tools: (tools collect: #copy); maxTurns: maxTurns; requestTimeoutSeconds: requestLimit seconds;
+   restore: history; useContext: context forFork; yourself ]
+]
+
+{ #category : 'private' }
+SmallGPTalkSession >> restore: history [
+ exchanges := history copy
+]
+
+{ #category : 'configuration' }
+SmallGPTalkSession >> requestTimeoutSeconds: seconds [
+ lock critical: [
+  activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
+  requestLimit := SmallGPTalkTimeLimit seconds: seconds ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkSession >> requestTimeoutSeconds [ ^ requestLimit seconds ]
+
+{ #category : 'private' }
+SmallGPTalkSession >> workFor: exchange during: run [
+ ^ tools inject: [ exchange answerUsing: model tools: tools limit: maxTurns requestLimit: requestLimit contextPolicy: context during: run ]
+  into: [ :work :tool | [ tool during: work ] ]
 ]
 
 { #category : 'accessing' }
 SmallGPTalkSession >> context [ ^ context ]
+
+{ #category : 'compaction' }
+SmallGPTalkSession >> compact [
+ ^ lock critical: [
+  | request exchange run count |
+  activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
+  exchanges ifEmpty: [ self error: 'There is no history to compact.' ].
+  count := exchanges size.
+  request := context summaryRequestFrom: exchanges.
+  exchange := SmallGPTalkExchange request: request.
+  run := SmallGPTalkRun on: exchange.
+  run whenSucceeded: [ :reply | context absorb: reply through: count ].
+  activeRun := run.
+  run start: [
+   changes notify: exchange.
+   requestLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ]
+  ] whenFinished: [ self release: run ].
+  run ]
+]
+
+{ #category : 'private' }
+SmallGPTalkSession >> prepareContextFor: exchange during: run [
+ | history request reply |
+ (context needsCompactionFor: exchange context model: model) ifFalse: [ ^ self ].
+ history := exchanges allButLast.
+ request := context summaryRequestFrom: history.
+ reply := requestLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ].
+ run whileRunningDo: [
+  context absorb: reply through: history size.
+  exchange useContext: ((context requestFor: exchange request history: history agent: agent) withTools: tools) ]
+]
+
+{ #category : 'initialization' }
+SmallGPTalkSession >> useContext: aContext [ context := aContext ]
+
+{ #category : 'observation' }
+SmallGPTalkSession >> whenFinished: aBlock [ ^ observers add: aBlock ]
+
+{ #category : 'observation' }
+SmallGPTalkSession >> removeObserver: observer [
+ observers remove: observer.
+ changes remove: observer
+]
+
+{ #category : 'observation' }
+SmallGPTalkSession >> observerErrors [ ^ observers errors , changes errors ]
+
+{ #category : 'execution' }
+SmallGPTalkSession >> cancel [
+ | run |
+ run := lock critical: [ activeRun ].
+ run ifNotNil: [ run cancel ]
+]
+
+{ #category : 'observation' }
+SmallGPTalkSession >> whenChanged: aBlock [ ^ changes add: aBlock ]

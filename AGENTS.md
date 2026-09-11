@@ -1,5 +1,15 @@
 # SmallGPTalk development rules
 
+## Fresh implementation
+
+This directory is a rewrite from zero, not a migration or refactor.
+The old implementation is a reference, not the starting class model.
+Do not copy its classes, tests, or architecture as the new implementation.
+Start with executable Smalltalk examples and behavior tests. Let the object
+collaborations guide the classes. Use composition and small protocols.
+Consult the old login and transport code for verified protocol details.
+Port code only after its role in the new design is clear and tested.
+
 ## Project direction
 
 - Build a minimal agent harness in Smalltalk for Pharo.
@@ -9,7 +19,7 @@
 - Preserve login in macOS Keychain across Pharo restarts.
 - Keep the Smalltalk API independent of the optional chat window.
 - Use Playground examples and headless tests before adding a user interface.
-- Use native image tools for search, read, compile, evaluate, and SUnit execution.
+- Start with evaluate as the only image tool. Use Smalltalk for reflection, code changes, and SUnit.
 - Keep file tools, shell tools, and session storage outside the first version.
 - Preserve the account login requirement when a connection problem occurs.
 - Keep planned features distinct from implemented features.

@@ -1,26 +1,16 @@
-"Load the API, optional chat, and test packages with their required packages."
 Class {
-	#name : 'BaselineOfSmallGPTalk',
-	#superclass : 'BaselineOf',
-	#category : 'BaselineOfSmallGPTalk',
-	#package : 'BaselineOfSmallGPTalk'
+ #name : 'BaselineOfSmallGPTalk',
+ #superclass : 'BaselineOf',
+ #category : 'BaselineOfSmallGPTalk'
 }
 
 { #category : 'baselines' }
 BaselineOfSmallGPTalk >> baseline: spec [
-	<baseline>
-	spec for: #common do: [
-		spec
-			package: 'SmallGPTalk-Core';
-			package: 'SmallGPTalk-OpenAI' with: [ spec requires: #('SmallGPTalk-Core') ];
-			package: 'SmallGPTalk-Pharo' with: [ spec requires: #('SmallGPTalk-Core') ];
-			package: 'SmallGPTalk-Chat' with: [ spec requires: #('SmallGPTalk-OpenAI' 'SmallGPTalk-Pharo') ];
-			package: 'SmallGPTalk-Tests' with: [
-				spec requires: #('SmallGPTalk-Core' 'SmallGPTalk-OpenAI' 'SmallGPTalk-Pharo' 'SmallGPTalk-Chat') ];
-			group: 'Core' with: #('SmallGPTalk-Core');
-			group: 'OpenAI' with: #('SmallGPTalk-OpenAI');
-			group: 'Pharo' with: #('SmallGPTalk-Pharo');
-			group: 'Chat' with: #('SmallGPTalk-Chat');
-			group: 'default' with: #('SmallGPTalk-Core' 'SmallGPTalk-OpenAI' 'SmallGPTalk-Pharo');
-			group: 'Tests' with: #('SmallGPTalk-Tests') ]
+ <baseline>
+ spec for: #common do: [
+  spec package: 'SmallGPTalk-Core'.
+  spec package: 'SmallGPTalk-Pharo' with: [ spec requires: #('SmallGPTalk-Core') ].
+  spec package: 'SmallGPTalk-OpenAI' with: [ spec requires: #('SmallGPTalk-Core') ].
+  spec package: 'SmallGPTalk-UI' with: [ spec requires: #('SmallGPTalk-Core') ].
+  spec package: 'SmallGPTalk-Tests' with: [ spec requires: #('SmallGPTalk-Core' 'SmallGPTalk-Pharo' 'SmallGPTalk-UI' 'SmallGPTalk-OpenAI') ] ]
 ]

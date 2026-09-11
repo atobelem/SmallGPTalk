@@ -1,10 +1,7 @@
-| root group |
-root := Smalltalk os environment at: 'SMALLGPTALK_ROOT'.
-group := Smalltalk os environment at: 'SMALLGPTALK_LOAD_GROUP' ifAbsent: [ 'Tests' ].
-(Smalltalk version beginsWith: 'Pharo13') ifFalse: [
-	Error signal: 'SmallGPTalk requires Pharo 13 for this release.' ].
+"Load only the new source into a clean image."
+(Smalltalk version beginsWith: 'Pharo13') ifFalse: [ Error signal: 'Use Pharo 13.' ].
 Metacello new
-	baseline: 'SmallGPTalk';
-	repository: 'tonel://', root, '/src';
-	load: group.
+ baseline: 'SmallGPTalk';
+ repository: 'tonel://', (Smalltalk os environment at: 'SMALLGPTALK_ROOT'), '/src';
+ load.
 Smalltalk snapshot: true andQuit: true.
