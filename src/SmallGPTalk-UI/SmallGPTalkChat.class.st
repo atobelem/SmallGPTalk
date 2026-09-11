@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkChat',
  #superclass : 'SpPresenter',
- #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'nextUsage', 'refreshingHistory', 'refreshQueue' ],
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'nextUsage', 'refreshingHistory', 'refreshQueue', 'prompt' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -40,6 +40,7 @@ SmallGPTalkChat >> modelSelector [ ^ modelSelector ]
 
 { #category : 'initialization' }
 SmallGPTalkChat >> initializePresenters [
+ prompt := self newButton label: 'System prompt'; action: [ self openSystemPrompt ]; yourself.
  exchanges := self newList.
  exchanges display: [ :exchange | (exchange request contractTo: 60), ' — ', exchange state asString ].
  exchanges whenSelectionChangedDo: [ refreshingHistory == true ifFalse: [ self showSelection ] ].
@@ -73,6 +74,7 @@ SmallGPTalkChat >> defaultLayout [
 { #category : 'layout' }
 SmallGPTalkChat >> historyLayout [
  ^ SpBoxLayout newVertical spacing: 6;
+  add: prompt height: 28;
   add: (self newLabel label: 'History') expand: false;
   add: exchanges;
   add: (self newLabel label: 'Selected exchange') expand: false;
@@ -251,3 +253,17 @@ SmallGPTalkChat >> estimateText [ ^ nextUsage label ]
 
 { #category : 'configuration' }
 SmallGPTalkChat >> messageText: text [ input text: text ]
+
+{ #category : 'accessing' }
+SmallGPTalkChat >> systemPrompt [
+ ^ session agent ifNil: [ '' ] ifNotNil: [ :agent | agent instructions ]
+]
+
+{ #category : 'actions' }
+SmallGPTalkChat >> openSystemPrompt [
+ | view |
+ view := SpTextPresenter new text: self systemPrompt; beNotEditable; yourself.
+ view open.
+ view window title: 'System prompt'.
+ ^ view
+]

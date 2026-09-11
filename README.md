@@ -310,6 +310,11 @@ storage are outside this version. Conversations remain in memory.
 
 ## Open views and observe
 
+The **System prompt** button opens the current agent instructions as read-only
+text. You can select and copy the text. Reopen the window after changing the
+agent instructions to see their current value. For the instructions captured
+by a past request, use **Inspect context**.
+
 The chat places history and selected-exchange actions in a left column. The
 conversation and message editor use the main area. Model and effort selection
 stay at the top; Apply selection applies both to future requests. Context usage

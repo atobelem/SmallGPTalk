@@ -70,17 +70,17 @@ the test record. This check uses invented data, not the account record.
 ## Latest results
 
 The latest offline and native checks passed on 2026-09-11.
-Local logs are in `.build/verify-bsfjxffh/`.
+Local logs are in `.build/verify-b5fdcimj/`.
 
 | Check | Result |
 | --- | --- |
-| SUnit | 207 passes, no failures or errors |
-| Loaded source | 73 classes, 728 methods; no undeclared references or missing self/super messages |
+| SUnit | 208 passes, no failures or errors |
+| Loaded source | 73 classes, 731 methods; no undeclared references or missing self/super messages |
 | Core alone | Named-agent session and independent fork passed |
-| Native views | Chat, running preview, context estimate, and evaluation checks passed |
+| Native views | Chat, read-only system prompt, running preview, context estimate, and evaluation checks passed |
 | Earlier live session (`b9589bc`) | Evaluation, automatic compaction, fork, manual compaction, and continuation passed with one independently verified mutation |
 
-Live account checks were not repeated for the removal. The earlier live session used `gpt-5.6-luna`, effort `low`, and the exact two-line
+Live account checks were not repeated for this UI change. The earlier live session used `gpt-5.6-luna`, effort `low`, and the exact two-line
 launcher prompt. Local logs are in `.build/verify-tqcy5eks/`. They are ignored
 by Git and can be removed. [The offline CI run passed](https://github.com/atobelem/SmallGPTalk/actions/runs/34615185876).
 

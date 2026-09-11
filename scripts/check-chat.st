@@ -12,6 +12,7 @@ UIManager default defer: [
  fixture setUp.
  provider := fixture provider.
  session := (SmallGPTalkAgent named: 'Ada') newSessionWith: provider defaultModel.
+ session agent instructions: 'Use the image documentation. Inspect your own classes.'.
  first := SmallGPTalkChat forSession: session provider: provider.
  second := SmallGPTalkChat forSession: session provider: provider.
  first open.
@@ -41,8 +42,15 @@ number factorial. "720"
    (output / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: 'PASS: native views share the session; closing one preserves the other; compaction status is visible.' ].
    [ (Delay forMilliseconds: 800) wait.
     UIManager default defer: [
+     [ | promptView |
      World imageForm writePNGFileNamed: (output / 'window.png') fullName.
-     Smalltalk snapshot: false andQuit: true ] ] fork
+     promptView := second openSystemPrompt.
+     promptView text asString = session agent instructions ifFalse: [ Error signal: 'The system prompt is incorrect.' ].
+     promptView isEditable ifTrue: [ Error signal: 'The system prompt must be read only.' ].
+     World imageForm writePNGFileNamed: (output / 'system-prompt.png') fullName.
+     Stdio stdout nextPutAll: 'PASS: native system prompt text and read-only view.'; lf.
+     Smalltalk snapshot: false andQuit: true
+     ] on: Error do: [ :error | Stdio stdout nextPutAll: error description; lf. Smalltalk exit: 1 ] ] ] fork
   ] on: Error do: [ :error |
    (output / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: error description ].
    Smalltalk exit: 1 ] ]

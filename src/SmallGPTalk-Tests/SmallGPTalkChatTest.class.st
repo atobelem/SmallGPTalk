@@ -222,3 +222,19 @@ SmallGPTalkChatTest >> testRefreshPreservesTranscriptReadingPosition [
   self assert: pane offset equals: position
  ] ensure: [ chat disconnect ]
 ]
+
+{ #category : 'tests' }
+SmallGPTalkChatTest >> testSystemPromptUsesTheCurrentSessionAgent [
+ | agent session chat |
+ agent := SmallGPTalkAgent named: 'Ada'.
+ agent instructions: 'First instructions.'.
+ session := agent newSessionWith: self.
+ chat := SmallGPTalkChat forSession: session.
+ [
+  self assert: chat systemPrompt equals: agent instructions.
+  agent instructions: 'Changed instructions.'.
+  self assert: chat systemPrompt equals: 'Changed instructions.'.
+  chat connectTo: (SmallGPTalkSession withModel: self).
+  self assert: chat systemPrompt equals: ''
+ ] ensure: [ chat disconnect ]
+]
