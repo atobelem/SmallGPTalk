@@ -2,7 +2,7 @@
 
 These results belong to this rewrite, not to the archived implementation.
 The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 203 offline
-tests with seed 1053842761. The historical cancellation timeout and a separate
+tests with seed 904249668. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -411,3 +411,22 @@ checked 71 classes and 718 methods with zero issues (`.build/removal-source.log`
 The native chat check passed and its screenshot was inspected
 (`.build/removal-native/native.log`). These images exited without saving.
 No live OpenAI or Keychain check was needed for this removal.
+
+## Test collaboration cleanup
+
+Tests now refer directly to classes that the baseline supplies. Chat command
+tests use the presenter lookup protocol and `statusText`, without reading
+those fields directly. Assertions and test counts are unchanged. This is a
+refactor of existing tests, not a new red-to-green feature cycle.
+
+Three internal reads remain. One retains an old chat subscription to reproduce
+a stale queued notification. Two inspect a semaphore wait queue to reproduce
+interrupted-wait races. Comments state why those reads are needed. The rendering
+probe still checks that message text cannot execute a global assignment.
+No production accessors were added for tests.
+
+All 203 tests passed in a clean image with seed 904249668
+(`.build/test-protocols.log`). Loaded-source inspection checked 71 classes and
+718 methods with zero issues (`.build/test-protocols-source.log`). Production
+source did not change. Native and live checks were not repeated for this
+change to tests.

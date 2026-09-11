@@ -144,7 +144,7 @@ SmallGPTalkOpenAIHTTPTest >> testCodexOctetStreamContainsTheSameSSEProtocol [
 { #category : 'tests' }
 SmallGPTalkOpenAIHTTPTest >> testCloseFailureStillClearsAuthenticationHeaders [
  | transport client headers |
- client := (Smalltalk globals at: #SmallGPTalkCloseFailingClient) new.
+ client := SmallGPTalkCloseFailingClient new.
  transport := SmallGPTalkOpenAIHTTP endpoint: 'http://127.0.0.1:', server port asString, '/responses'
   clients: [ client ].
  headers := Dictionary new at: 'Authorization' put: 'Bearer test-only'; yourself.

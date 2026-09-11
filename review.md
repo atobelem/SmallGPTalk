@@ -101,9 +101,9 @@ failed before the change; the final suite has 207 passes. See
 [validation.md](validation.md#uniform-reply-protocol).
 
 The extractions below address execution in Exchange and process supervision.
-Improvement has since been removed. Remaining work is to reduce unnecessary
-access to internal fields in ordinary UI tests. Passing tests do not close
-those design concerns.
+Improvement has since been removed. The test cleanup below addresses the
+unnecessary internal reads. These follow-ups address the listed design concerns;
+passing tests do not prove that all possible defects are absent.
 
 ## Design follow-up: turn execution
 
@@ -129,3 +129,12 @@ The feature and its chat connection were removed at the user's request.
 Its tests and dedicated scripts were also removed. No optional package remains.
 All 203 remaining tests pass. Source inspection and the native chat check pass.
 See [validation.md](validation.md#remove-continuous-improvement).
+
+## Design follow-up: test collaborations
+
+Ordinary chat tests use presenter lookup and the existing status protocol.
+Tests use direct references to loaded classes. Three internal reads remain
+for precise concurrency regressions, with comments that explain their purpose.
+No production API was added. The same 203 tests pass, and loaded-source
+inspection reports zero issues. See
+[validation.md](validation.md#test-collaboration-cleanup).

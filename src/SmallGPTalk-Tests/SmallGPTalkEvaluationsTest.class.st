@@ -18,7 +18,7 @@ SmallGPTalkEvaluationsTest >> testViewKeepsTheCallAndShowsItsSourceOutputAndCont
  session := SmallGPTalkSession withModel: self.
  session tools: { SmallGPTalkEvaluate new }.
  run := session send: 'Compute'. run wait.
- view := (Smalltalk globals at: #SmallGPTalkEvaluations) forExchange: run exchange.
+ view := SmallGPTalkEvaluations forExchange: run exchange.
  self assert: view selectedCall identicalTo: run exchange calls first.
  self assert: view sourceText equals: '6 factorial'.
  self assert: (view outputText includesSubstring: '720').

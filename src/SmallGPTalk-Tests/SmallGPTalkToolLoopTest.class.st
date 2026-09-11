@@ -10,19 +10,19 @@ SmallGPTalkToolLoopTest >> respondTo: request [ ^ modelAction value: request ]
 
 { #category : 'helpers' }
 SmallGPTalkToolLoopTest >> call: id source: text [
- ^ (Smalltalk globals at: #SmallGPTalkCall) id: id name: 'evaluate'
+ ^ SmallGPTalkCall id: id name: 'evaluate'
   arguments: (Dictionary new at: 'source' put: text; yourself)
 ]
 
 { #category : 'helpers' }
 SmallGPTalkToolLoopTest >> replyWith: calls [
- ^ (Smalltalk globals at: #SmallGPTalkReply) text: 'Evaluate.' calls: calls
+ ^ SmallGPTalkReply text: 'Evaluate.' calls: calls
 ]
 
 { #category : 'helpers' }
 SmallGPTalkToolLoopTest >> session [
  ^ (SmallGPTalkSession withModel: self)
-  tools: { (Smalltalk globals at: #SmallGPTalkEvaluate) new }; yourself
+  tools: { SmallGPTalkEvaluate new }; yourself
 ]
 
 { #category : 'tests' }

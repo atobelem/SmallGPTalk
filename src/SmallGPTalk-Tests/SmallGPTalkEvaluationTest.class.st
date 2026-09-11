@@ -8,7 +8,7 @@ Class {
 { #category : 'tests' }
 SmallGPTalkEvaluationTest >> testEvaluationKeepsTheSourceAndRealObject [
  | evaluation |
- evaluation := (Smalltalk globals at: #SmallGPTalkEvaluation) source: 'SmallGPTalkEvaluationTest'.
+ evaluation := SmallGPTalkEvaluation source: 'SmallGPTalkEvaluationTest'.
  self assert: evaluation state equals: #pending.
  self assert: evaluation execute identicalTo: evaluation.
  self assert: evaluation state equals: #completed.
@@ -19,7 +19,7 @@ SmallGPTalkEvaluationTest >> testEvaluationKeepsTheSourceAndRealObject [
 { #category : 'tests' }
 SmallGPTalkEvaluationTest >> testNilIsASuccessfulResult [
  | evaluation |
- evaluation := (Smalltalk globals at: #SmallGPTalkEvaluation) source: 'nil'.
+ evaluation := SmallGPTalkEvaluation source: 'nil'.
  evaluation execute.
  self assert: evaluation state equals: #completed.
  self assert: evaluation result isNil.
@@ -30,7 +30,7 @@ SmallGPTalkEvaluationTest >> testNilIsASuccessfulResult [
 SmallGPTalkEvaluationTest >> testSyntaxAndRuntimeFailuresRemainInspectable [
  #('1 + ]' 'Error signal: ''Fixture failure.''') do: [ :source |
   | evaluation |
-  evaluation := (Smalltalk globals at: #SmallGPTalkEvaluation) source: source.
+  evaluation := SmallGPTalkEvaluation source: source.
   evaluation execute.
   self assert: evaluation state equals: #failed.
   self assert: evaluation source equals: source.
@@ -41,7 +41,7 @@ SmallGPTalkEvaluationTest >> testSyntaxAndRuntimeFailuresRemainInspectable [
 { #category : 'tests' }
 SmallGPTalkEvaluationTest >> testAnEvaluationCannotExecuteTwice [
  | evaluation |
- evaluation := (Smalltalk globals at: #SmallGPTalkEvaluation) source: 'Object new'.
+ evaluation := SmallGPTalkEvaluation source: 'Object new'.
  evaluation execute.
  self should: [ evaluation execute ] raise: Error.
  self assert: evaluation state equals: #completed

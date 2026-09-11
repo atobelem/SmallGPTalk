@@ -8,7 +8,7 @@ Class {
 { #category : 'tests' }
 SmallGPTalkMessageTextTest >> testCodeAndEmphasisAreRenderedWithoutMarkdownDelimiters [
  | text index |
- text := (Smalltalk globals at: #SmallGPTalkMessageText) from:
+ text := SmallGPTalkMessageText from:
   'Here is **code**:', String lf, '```smalltalk', String lf, '6 factorial.', String lf, '```'.
  self assert: text isText.
  self assert: (text asString includesSubstring: '6 factorial.').
@@ -22,7 +22,7 @@ SmallGPTalkMessageTextTest >> testCodeAndEmphasisAreRenderedWithoutMarkdownDelim
 SmallGPTalkMessageTextTest >> testScriptMarkupIsDisplayedWithoutExecution [
  | text |
  [
-  text := (Smalltalk globals at: #SmallGPTalkMessageText) from:
+  text := SmallGPTalkMessageText from:
    '<!script', String lf, 'Smalltalk globals at: #SmallGPTalkRenderProbe put: true.', String lf, '!>'.
   self deny: (Smalltalk globals includesKey: #SmallGPTalkRenderProbe).
   self assert: (text asString includesSubstring: 'SmallGPTalkRenderProbe')

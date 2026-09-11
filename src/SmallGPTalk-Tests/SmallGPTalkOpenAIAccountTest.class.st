@@ -113,7 +113,7 @@ SmallGPTalkOpenAIAccountTest >> testAuthenticationFailureRenewsOnceAndClearsBoth
  result := account withHeadersDo: [ :headers |
   attempts := attempts + 1.
   retained add: headers.
-  attempts = 1 ifTrue: [ (Smalltalk globals at: #SmallGPTalkHTTPFailure) status: 401 ].
+  attempts = 1 ifTrue: [ SmallGPTalkHTTPFailure status: 401 ].
   self assert: (headers at: 'Authorization') equals: 'Bearer test-renewed'.
   'Done.' ].
  self assert: result equals: 'Done.'.
@@ -130,7 +130,7 @@ SmallGPTalkOpenAIAccountTest >> testRepeatedAuthenticationFailureStopsAfterOneRe
  attempts := 0.
  self should: [ account withHeadersDo: [ :headers |
   attempts := attempts + 1.
-  (Smalltalk globals at: #SmallGPTalkHTTPFailure) status: 401 ] ]
+  SmallGPTalkHTTPFailure status: 401 ] ]
   raise: Error withExceptionDo: [ :failure |
    self assert: failure messageText equals: 'The model request failed with HTTP 401.' ].
  self assert: attempts equals: 2.

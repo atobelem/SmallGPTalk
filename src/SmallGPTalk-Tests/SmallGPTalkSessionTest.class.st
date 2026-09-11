@@ -41,6 +41,7 @@ SmallGPTalkSessionTest >> testTerminatingAnAwakenedWaiterDoesNotLoseCompletion [
   Processor activeProcess priority: priority + 1.
   done signal ].
  run := session send: 'Finish once'.
+ "Inspect the wait queue to reproduce the interrupted-wait race."
  completion := run instVarNamed: 'completion'.
  [
   self deny: (entered waitTimeoutMilliseconds: 1000).
@@ -73,6 +74,7 @@ SmallGPTalkSessionTest >> testInterruptingAWaitDoesNotCompleteRunningWork [
  answer := 'Done.'.
  session := SmallGPTalkSession withModel: self.
  run := session send: 'Keep running'.
+ "Inspect the wait queue to reproduce the interrupted-wait race."
  completion := run instVarNamed: 'completion'.
  [
   self deny: (entered waitTimeoutMilliseconds: 1000).
@@ -184,7 +186,7 @@ SmallGPTalkSessionTest >> testConversationRetainsAFailedExchange [
 { #category : 'tests' }
 SmallGPTalkSessionTest >> testNamedAgentCreatesIndependentSessions [
  | agent first second run |
- agent := (Smalltalk globals at: #SmallGPTalkAgent) named: 'Ada'.
+ agent := SmallGPTalkAgent named: 'Ada'.
  first := agent newSessionWith: self.
  second := agent newSessionWith: self.
  answer := 'Hello.'.

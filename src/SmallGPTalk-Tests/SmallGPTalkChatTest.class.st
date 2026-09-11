@@ -115,7 +115,7 @@ SmallGPTalkChatTest >> testCompactCommandKeepsHistoryAndDoesNotSendAUserMessage 
  session whenFinished: [ :result | completed := result. done signal ].
  modelAction := [ :input | request := input. 'The first answer is retained.' ].
  [
-  (chat instVarNamed: 'input') text: ' /compact '.
+  (chat presenterAt: #input) text: ' /compact '.
   chat sendMessage.
   self deny: (done waitTimeoutMilliseconds: 2000).
   self assert: completed state equals: #completed.
@@ -123,7 +123,7 @@ SmallGPTalkChatTest >> testCompactCommandKeepsHistoryAndDoesNotSendAUserMessage 
   self assert: session conversation size equals: 1.
   self assert: session conversation first identicalTo: original.
   self assert: session context summary equals: 'The first answer is retained.'.
-  self assert: (chat instVarNamed: 'input') text isEmpty
+  self assert: (chat presenterAt: #input) text isEmpty
  ] ensure: [ session cancel. chat disconnect ]
 ]
 
@@ -134,11 +134,11 @@ SmallGPTalkChatTest >> testCompactCommandWithoutHistoryKeepsTheInputAndShowsTheE
  session := SmallGPTalkSession withModel: self.
  chat := SmallGPTalkChat forSession: session.
  [
-  (chat instVarNamed: 'input') text: '/compact'.
+  (chat presenterAt: #input) text: '/compact'.
   chat sendMessage.
   self assert: session conversation isEmpty.
-  self assert: (chat instVarNamed: 'input') text equals: '/compact'.
-  self assert: (chat instVarNamed: 'status') label equals: 'There is no history to compact.'
+  self assert: (chat presenterAt: #input) text equals: '/compact'.
+  self assert: chat statusText equals: 'There is no history to compact.'
  ] ensure: [ session cancel. chat disconnect ]
 ]
 
@@ -168,6 +168,7 @@ SmallGPTalkChatTest >> testOldNotificationCannotChangeAReconnectedView [
  run := first send: 'First session'. run wait.
  chat := SmallGPTalkChat forSession: first.
  [
+  "Keep the old subscription to deliver a stale queued notification."
   oldObserver := chat instVarNamed: 'observer'.
   run := first compact. run wait.
   oldOutcome := run exchange.
@@ -186,7 +187,7 @@ SmallGPTalkChatTest >> testOldNotificationCannotChangeAReconnectedView [
 { #category : 'tests' }
 SmallGPTalkChatTest >> testUsageShowsTokensForTheSelectedRequest [
  | session chat run reply usage |
- usage := (Smalltalk globals at: #SmallGPTalkContextUsage) inputTokens: 68000 capacity: 272000.
+ usage := SmallGPTalkContextUsage inputTokens: 68000 capacity: 272000.
  reply := SmallGPTalkReply text: 'Done.' calls: #().
  reply usage: usage.
  modelAction := [ :request | reply ].

@@ -25,7 +25,7 @@ SmallGPTalkOpenAIProviderTest >> post: body headers: headers [
 
 { #category : 'fixtures' }
 SmallGPTalkOpenAIProviderTest >> provider [
- ^ (Smalltalk globals at: #SmallGPTalkOpenAIProvider) account: self catalog: self responses: self
+ ^ SmallGPTalkOpenAIProvider account: self catalog: self responses: self
 ]
 
 { #category : 'tests' }
