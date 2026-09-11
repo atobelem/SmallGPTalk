@@ -53,7 +53,7 @@ SmallGPTalkSession >> send: request [
   run start: [
    changes notify: exchange.
    self prepareContextFor: exchange during: run.
-   (self workFor: exchange during: run) value ] whenFinished: [ self release: run ].
+   (self turnFor: run) execute ] whenFinished: [ self release: run ].
   run ]
 ]
 
@@ -121,9 +121,9 @@ SmallGPTalkSession >> requestTimeoutSeconds: seconds [
 SmallGPTalkSession >> requestTimeoutSeconds [ ^ requestLimit seconds ]
 
 { #category : 'private' }
-SmallGPTalkSession >> workFor: exchange during: run [
- ^ tools inject: [ exchange answerUsing: model tools: tools limit: maxTurns requestLimit: requestLimit contextPolicy: context during: run ]
-  into: [ :work :tool | [ tool during: work ] ]
+SmallGPTalkSession >> turnFor: run [
+ ^ SmallGPTalkTurn for: run model: model tools: tools limit: maxTurns
+  requestLimit: requestLimit contextPolicy: context
 ]
 
 { #category : 'accessing' }

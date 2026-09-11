@@ -1,8 +1,8 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 207 offline
-tests with seed 763305028. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 209 offline
+tests with seed 799023428. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -341,4 +341,28 @@ check passed with gpt-5.6-luna and low effort: one evaluation, automatic
 mid-turn compaction, fork, manual compaction, and continuation without another
 fixture mutation. Evidence: `.build/reply-native/native.log`,
 `.build/native-chat/result.txt`, and `.build/reply-live.log`. Both images exited
+without saving.
+
+## Turn execution and exchange records
+
+Two collaboration tests first produced two errors in a 209-test run. They
+require a turn that executes without a session, and exchange recording that
+validates a whole reply without executing its calls. The final suite passed
+all 209 tests with seed 799023428. Existing cancellation, tool order, observer,
+streaming, and compaction tests also passed.
+
+The session creates a run and supplies a turn. `SmallGPTalkTurn` executes
+model requests, ordered tools, and compaction between model requests.
+`SmallGPTalkExchange` validates and retains replies, context, and preview text.
+Manual compaction and preparation before the turn remain in the session.
+Process supervision remains separate work.
+
+Evidence: `.build/turn-red.log`, `.build/turn-green.log`, and
+`.build/turn-final.log`. The loaded-source check inspected 74 classes and 765
+methods with zero issues (`.build/turn-source.log`). The clean core-only load
+and independent fork passed (`.build/turn-core.log`). The native chat check
+passed and its screenshot was inspected (`.build/turn-native/native.log`).
+The live check passed with gpt-5.6-luna and low effort: one verified evaluation,
+automatic compaction within the turn, fork, manual compaction, and continuation
+without repeating the mutation (`.build/turn-live.log`). Check images exited
 without saving.

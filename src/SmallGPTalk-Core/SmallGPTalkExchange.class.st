@@ -70,44 +70,6 @@ SmallGPTalkExchange >> finishCancellation [
  state := #cancelled
 ]
 
-{ #category : 'execution' }
-SmallGPTalkExchange >> answerUsing: model tools: tools limit: count requestLimit: timeLimit contextPolicy: policy during: run [
- | base covered |
- usedModel := model.
- base := context.
- covered := 0.
- [
-  count timesRepeat: [
-   | reply request |
-   state = #running ifFalse: [ ^ nil ].
-   request := replies ifEmpty: [ base ] ifNotEmpty: [ base following: (replies allButFirst: covered) ].
-   (replies notEmpty and: [ policy needsCompactionFor: request model: model ]) ifTrue: [
-    modelContext := request forCompaction.
-    reply := timeLimit value: [ model respondTo: modelContext ] startWhen: [ :start | run whileRunningDo: start ].
-    state = #running ifFalse: [ ^ nil ].
-    base := policy request: request summarizedBy: reply.
-    covered := replies size - 1.
-    request := base following: { replies last } ].
-   state = #running ifFalse: [ ^ nil ].
-   modelContext := request.
-   reply := self responseFrom: model request: request limit: timeLimit during: run.
-   state = #running ifFalse: [ ^ nil ].
-   reply := SmallGPTalkReply from: reply.
-   reply validateWithUsedIds: self usedCallIds.
-   reply context: request.
-   replies add: reply.
-   self reportChange.
-   reply calls ifEmpty: [ ^ reply result ].
-   reply calls do: [ :call |
-    state = #running ifFalse: [ ^ nil ].
-    call executeWith: tools startWhen: [ :start | run whileRunningDo: start ] onStart: [
-     self reportChange.
-     state = #running ifFalse: [ ^ nil ] ].
-    self reportChange ] ].
-  self error: 'The model request limit was reached.'
- ] ensure: [ self calls do: #cancelIfPending ]
-]
-
 { #category : 'accessing' }
 SmallGPTalkExchange >> replies [ ^ replies copy ]
 
@@ -204,19 +166,35 @@ SmallGPTalkExchange >> modelUsage [
   ifNone: [ ^ nil ]) usage
 ]
 
-{ #category : 'private - streaming' }
-SmallGPTalkExchange >> responseFrom: model request: request limit: timeLimit during: run [
- partialText := String new writeStream.
- request whenText: [ :fragment |
-  | accepted |
-  accepted := false.
-  run whileRunningDo: [ partialText nextPutAll: fragment. accepted := true ].
-  accepted ifTrue: [ self reportChange ] ].
- ^ [ timeLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ] ]
-  ensure: [ request whenText: nil. partialText := nil ]
-]
-
 { #category : 'measurement' }
 SmallGPTalkExchange >> modelUsageFor: model [
  ^ usedModel == model ifTrue: [ self modelUsage ] ifFalse: [ nil ]
 ]
+
+{ #category : 'recording' }
+SmallGPTalkExchange >> recordReply: reply for: request [
+ self requireRunning.
+ reply validateWithUsedIds: self usedCallIds.
+ reply context: request.
+ replies add: reply.
+ self reportChange
+]
+
+{ #category : 'recording' }
+SmallGPTalkExchange >> selectRequest: request from: model [
+ self requireRunning.
+ modelContext := request.
+ usedModel := model
+]
+
+{ #category : 'recording' }
+SmallGPTalkExchange >> cancelPendingCalls [ self calls do: #cancelIfPending ]
+
+{ #category : 'recording - preview' }
+SmallGPTalkExchange >> beginPreview [ partialText := String new writeStream ]
+
+{ #category : 'recording - preview' }
+SmallGPTalkExchange >> appendPreview: fragment [ partialText nextPutAll: fragment ]
+
+{ #category : 'recording - preview' }
+SmallGPTalkExchange >> clearPreview [ partialText := nil ]

@@ -100,7 +100,16 @@ identity, while conversation entries use a common reply protocol. Five tests
 failed before the change; the final suite has 207 passes. See
 [validation.md](validation.md#uniform-reply-protocol).
 
-The remaining design work is to reduce Exchange's execution responsibilities,
-share process supervision, isolate deferred improvement, and reduce unnecessary
+The turn extraction below addresses execution in Exchange. Remaining work is
+to share process supervision, isolate deferred improvement, and reduce unnecessary
 access to internal fields in ordinary UI tests. Passing tests do not close
 those design concerns.
+
+## Design follow-up: turn execution
+
+`SmallGPTalkTurn` now owns the loop. It receives the run, model, tools, and
+limits from the session. Exchange retains and validates conversation records.
+This separates execution from records without adding provider or UI knowledge.
+Two new collaboration tests failed before implementation; all 209 tests now
+pass. Core-only, loaded-source, native chat, and live session checks passed.
+See [validation.md](validation.md#turn-execution-and-exchange-records).
