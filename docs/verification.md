@@ -2,6 +2,7 @@
 
 Use Python 3 and a clean Pharo 13 image with its matching changes and sources.
 Set `SMALLGPTALK_VM` to the VM executable if it is outside the default path.
+The command checks these paths before it creates images.
 
 ```sh
 SMALLGPTALK_BASE_IMAGE=/path/to/Pharo.image python3 scripts/verify.py
@@ -11,6 +12,8 @@ This command loads the source, runs SUnit, checks compiled methods, loads Core
 alone, and measures a burst of transcript updates. Each process has a five-minute
 limit. A failed or timed-out check stops the command with a nonzero status.
 Logs and image copies go to a new `.build/verify-*` directory on each run.
+Each Pharo check uses its image directory as its working directory. A timeout
+stops the process group and reports the log path.
 The `image.txt` file in that directory contains the loaded test image path.
 The default checks do not put credentials in that image.
 The burst check asserts one queued render and complete text. Its timing is
@@ -38,6 +41,16 @@ fixed local base image to repeat a check against the same runtime.
 
 References: [Pharo ZeroConf](https://github.com/pharo-project/pharo-zeroconf)
 and [GitHub runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+
+## Check the runner
+
+These Python tests need no Pharo image or account. They check configuration
+errors, working directories, failure logs, and process cleanup after a timeout.
+CI runs them before it downloads Pharo.
+
+```sh
+python3 -m unittest discover -s scripts -p 'test_*.py'
+```
 
 ## Separate login and Keychain checks
 

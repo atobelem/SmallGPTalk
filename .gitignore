@@ -8,3 +8,5 @@
 PharoDebug.log
 pharo-local/
 .DS_Store
+
+__pycache__/

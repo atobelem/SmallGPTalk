@@ -21,15 +21,20 @@ def copy_image(source, directory):
     return target
 
 
-def run(command, log, env, timeout=300):
+def run(command, log, env, timeout=300, cwd=None):
     with log.open('w') as output:
-        process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=output,
+        process = subprocess.Popen(command, cwd=cwd or log.parent, env=env, stdout=output,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         try:
             code = process.wait(timeout=timeout)
-        except BaseException:
-            os.killpg(process.pid, signal.SIGKILL)
+        except BaseException as error:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
             process.wait()
+            if isinstance(error, subprocess.TimeoutExpired):
+                raise RuntimeError(f'Check timed out after {timeout} seconds. Read {log}') from None
             raise
     if code:
         raise RuntimeError(f'Check failed ({code}). Read {log}')
@@ -41,9 +46,21 @@ def main():
     parser.add_argument('--native', action='store_true', help='Check four native views.')
     parser.add_argument('--live', action='store_true', help='Use the stored OpenAI login.')
     args = parser.parse_args()
-    base = Path(os.environ['SMALLGPTALK_BASE_IMAGE']).resolve()
+    base_name = os.environ.get('SMALLGPTALK_BASE_IMAGE')
+    if not base_name:
+        parser.error('Set SMALLGPTALK_BASE_IMAGE to a clean Pharo 13 image.')
+    base = Path(base_name).expanduser().resolve()
+    for path in (base, base.with_suffix('.changes')):
+        if not path.is_file():
+            parser.error(f'File not found: {path}')
+    if not any(base.parent.glob('*.sources')):
+        parser.error(f'No Pharo sources file in {base.parent}')
     vm = os.environ.get('SMALLGPTALK_VM', str(Path.home() /
         'Documents/Pharo/vms/130-x64/Pharo.app/Contents/MacOS/Pharo'))
+    executable = shutil.which(os.path.expanduser(vm))
+    if not executable:
+        parser.error('Set SMALLGPTALK_VM to an executable Pharo VM.')
+    vm = str(Path(executable).resolve())
     (ROOT / '.build').mkdir(exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix='verify-', dir=ROOT / '.build'))
     print(f'Verification: {directory}', flush=True)
@@ -66,9 +83,12 @@ def main():
         check_env = dict(env, SMALLGPTALK_CHECK_DIR=str(output))
         command = [vm] + ([] if native else ['--headless'])
         command += [str(image), 'st', str(ROOT / 'scripts' / f'check-{name}.st')]
-        run(command, directory / f'{name}.log', check_env)
+        run(command, directory / f'{name}.log', check_env, cwd=image.parent)
     print(f'All selected checks passed. Loaded image: {loaded}', flush=True)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except (OSError, RuntimeError) as error:
+        raise SystemExit(str(error)) from None

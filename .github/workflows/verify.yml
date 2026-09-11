@@ -11,6 +11,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Check the verification runner
+        run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - name: Download Pharo 13
         shell: bash
         run: |
