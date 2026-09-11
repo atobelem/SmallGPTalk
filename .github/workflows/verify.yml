@@ -1,0 +1,33 @@
+name: Verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pharo:
+    runs-on: macos-15-intel
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Pharo 13
+        shell: bash
+        run: |
+          mkdir -p .build/ci-base
+          cd .build/ci-base
+          curl -fsSL 'https://get.pharo.org/64/130+vm' -o download.sh
+          bash download.sh
+          echo "SMALLGPTALK_BASE_IMAGE=$PWD/Pharo.image" >> "$GITHUB_ENV"
+          echo "SMALLGPTALK_VM=$PWD/pharo" >> "$GITHUB_ENV"
+      - name: Verify without account access
+        run: python3 scripts/verify.py
+      - name: Keep check logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-logs
+          include-hidden-files: true
+          path: |
+            .build/verify-*/*.log
+            .build/test-*/*-Test.xml

@@ -1,5 +1,9 @@
-| root |
+| output root |
 root := (OSPlatform current environment at: 'SMALLGPTALK_ROOT') asFileReference.
+output := (OSPlatform current environment at: 'SMALLGPTALK_CHECK_DIR'
+ ifAbsent: [ (root / '.build' / ('native-', UUID new asString)) fullName ]) asFileReference.
+output ensureCreateDirectory.
+Stdio stdout nextPutAll: 'Output: '; nextPutAll: output fullName; lf.
 UIManager default defer: [
  [
   [ | fixture model session run |
@@ -18,7 +22,7 @@ UIManager default defer: [
      (view contextText includesSubstring: '2000') ifFalse: [ Error signal: 'The measured value changed.' ].
      [ (Delay forMilliseconds: 300) wait.
       UIManager default defer: [
-       World imageForm writePNGFileNamed: (root / '.build' / 'context-estimate-ui.png') fullName.
+       World imageForm writePNGFileNamed: (output / 'context-estimate-ui.png') fullName.
        Stdio stdout nextPutAll: 'PASS: native draft estimate and measured context are separate.'; lf.
        Smalltalk snapshot: false andQuit: true ] ] fork
     ] on: Error do: [ :error | Stdio stdout nextPutAll: error messageText; lf. Smalltalk exit: 1 ] ]

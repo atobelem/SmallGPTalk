@@ -16,5 +16,8 @@ for source in "$(dirname "$SMALLGPTALK_BASE_IMAGE")"/*.sources; do
 done
 export SMALLGPTALK_ROOT="$root"
 "${runner[@]}" --headless "$work/SmallGPTalk.image" st "$root/scripts/load.st"
+if [[ -n "${SMALLGPTALK_TEST_IMAGE_FILE:-}" ]]; then
+  printf '%s\n' "$work/SmallGPTalk.image" > "$SMALLGPTALK_TEST_IMAGE_FILE"
+fi
 cd "$work"
 "${runner[@]}" --headless SmallGPTalk.image test --junit-xml-output --fail-on-failure 'SmallGPTalk-Tests'

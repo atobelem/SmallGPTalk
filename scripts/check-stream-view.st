@@ -1,6 +1,10 @@
 "Run in a disposable native image. Keep the model blocked while checking the view."
-| root entered release fixture session chat run |
+| output root entered release fixture session chat run |
 root := (OSPlatform current environment at: 'SMALLGPTALK_ROOT') asFileReference.
+output := (OSPlatform current environment at: 'SMALLGPTALK_CHECK_DIR'
+ ifAbsent: [ (root / '.build' / ('native-', UUID new asString)) fullName ]) asFileReference.
+output ensureCreateDirectory.
+Stdio stdout nextPutAll: 'Output: '; nextPutAll: output fullName; lf.
 entered := Semaphore new.
 release := Semaphore new.
 fixture := SmallGPTalkObservationTest new.
@@ -22,7 +26,7 @@ UIManager default defer: [
       (((chat instVarNamed: 'details') text asString) includesSubstring: 'Assistant (in progress)')
        ifFalse: [ Error signal: 'The native view did not show the preview.' ].
       run exchange replies ifNotEmpty: [ Error signal: 'The preview was committed too soon.' ].
-      World imageForm writePNGFileNamed: (root / '.build' / 'native-stream.png') fullName.
+      World imageForm writePNGFileNamed: (output / 'native-stream.png') fullName.
       release signal
      ] on: Error do: [ :error | Stdio stdout nextPutAll: error messageText; lf. Smalltalk exit: 1 ] ].
     run wait.

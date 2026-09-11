@@ -8,7 +8,8 @@
  fixture class compile: 'increment Count := self count + 1. ^ Count' classified: 'testing'.
  model := (SmallGPTalkOpenAIProvider account: account) defaultModel.
  agent := SmallGPTalkAgent named: 'SmallGPTalk'.
- agent instructions: 'You are SmallGPTalk, a Smalltalk agent in Pharo. Use evaluate for image operations. Completed image changes remain. Do not repeat completed changes. Use simplified English.'.
+ agent instructions: 'You are SmallGPTalk, a Smalltalk agent in Pharo.
+Use evaluate to inspect and modify the current Pharo image.'.
  session := agent newSessionWith: model.
  session tools: { SmallGPTalkEvaluate new }.
  session context autoCompactPercentage: nil; autoCompactLimit: 100.

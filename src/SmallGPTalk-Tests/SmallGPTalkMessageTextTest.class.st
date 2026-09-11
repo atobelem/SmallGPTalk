@@ -39,7 +39,7 @@ SmallGPTalkMessageTextTest >> handleRequest: request [
 SmallGPTalkMessageTextTest >> testImageMarkupShowsItsLabelWithoutFetchingTheResource [
  | server text |
  requests := 0.
- server := ZnServer startOn: 20000 + 20000 atRandom.
+ server := ZnServer startOn: 0.
  server delegate: self.
  [
   text := SmallGPTalkMessageText from: '![A picture](http://127.0.0.1:', server port asString, '/image)'.

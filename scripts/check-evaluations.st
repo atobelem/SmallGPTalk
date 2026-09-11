@@ -1,5 +1,9 @@
-| root session run |
+| output root session run |
 root := (OSPlatform current environment at: 'SMALLGPTALK_ROOT') asFileReference.
+output := (OSPlatform current environment at: 'SMALLGPTALK_CHECK_DIR'
+ ifAbsent: [ (root / '.build' / ('native-', UUID new asString)) fullName ]) asFileReference.
+output ensureCreateDirectory.
+Stdio stdout nextPutAll: 'Output: '; nextPutAll: output fullName; lf.
 session := SmallGPTalkSession withModel: SmallGPTalkEvaluationsTest new.
 session tools: { SmallGPTalkEvaluate new }.
 run := session send: 'Compute'.
@@ -19,7 +23,7 @@ run := session send: 'Compute'.
     (Delay forMilliseconds: 800) wait.
     UIManager default defer: [
      [
-      World imageForm writePNGFileNamed: (root / '.build' / 'native-evaluations.png') fullName.
+      World imageForm writePNGFileNamed: (output / 'native-evaluations.png') fullName.
       Stdio stdout nextPutAll: 'PASS: native evaluation source, output, value, and context.'; lf.
       Smalltalk exit: 0
      ] on: Error do: [ :error | Stdio stdout nextPutAll: error description; lf. Smalltalk exit: 1 ] ]

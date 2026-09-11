@@ -1,6 +1,10 @@
-| root |
+| output root |
 root := (OSPlatform current environment at: 'SMALLGPTALK_ROOT') asFileReference.
-(root / '.build' / 'native-chat' / 'result.txt') ensureDelete.
+output := (OSPlatform current environment at: 'SMALLGPTALK_CHECK_DIR'
+ ifAbsent: [ (root / '.build' / ('native-', UUID new asString)) fullName ]) asFileReference.
+output ensureCreateDirectory.
+Stdio stdout nextPutAll: 'Output: '; nextPutAll: output fullName; lf.
+(output / 'result.txt') ensureDelete.
 UIManager default defer: [
  [
  | fixture provider session first second run compaction |
@@ -34,15 +38,15 @@ number factorial. "720"
    (run state = #completed) ifFalse: [ Error signal: 'The run did not complete.' ].
    (compaction state = #completed) ifFalse: [ Error signal: 'Compaction did not complete.' ].
    (second statusText = 'Compaction completed.') ifFalse: [ Error signal: 'The view did not show the compaction result.' ].
-   (root / '.build' / 'native-chat' / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: 'PASS: native views share the session; closing one preserves the other; compaction status is visible.' ].
+   (output / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: 'PASS: native views share the session; closing one preserves the other; compaction status is visible.' ].
    [ (Delay forMilliseconds: 800) wait.
     UIManager default defer: [
-     World imageForm writePNGFileNamed: (root / '.build' / 'native-chat' / 'window.png') fullName.
+     World imageForm writePNGFileNamed: (output / 'window.png') fullName.
      Smalltalk snapshot: false andQuit: true ] ] fork
   ] on: Error do: [ :error |
-   (root / '.build' / 'native-chat' / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: error description ].
+   (output / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: error description ].
    Smalltalk exit: 1 ] ]
  ] fork
  ] on: Error do: [ :error |
-  (root / '.build' / 'native-chat' / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: error description ].
+  (output / 'result.txt') writeStreamDo: [ :stream | stream nextPutAll: error description ].
   Smalltalk exit: 1 ] ]

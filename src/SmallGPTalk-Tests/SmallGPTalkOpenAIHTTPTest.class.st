@@ -11,7 +11,7 @@ SmallGPTalkOpenAIHTTPTest >> setUp [
  count := 0.
  status := 200.
  eventType := 'text/event-stream'.
- server := ZnServer startOn: 20000 + 20000 atRandom.
+ server := ZnServer startOn: 0.
  server delegate: self
 ]
 
