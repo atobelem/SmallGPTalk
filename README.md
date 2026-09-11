@@ -35,10 +35,10 @@ The rewrite acceptance checks passed. On 2026-09-11, a fresh browser login
 stored credentials in Keychain. A second Pharo process used that record for a
 model request. Live checks also passed evaluation, automatic compaction within
 a tool turn, fork, and continuation without a repeated mutation.
-The current offline suite has 203 passing tests. See [review.md](review.md)
+The current offline suite has 207 passing tests. See [review.md](review.md)
 for the complete source review and its corrections.
 See [the ten-principle audit](docs/principles-audit.md) for the current design
-assessment and the open compaction defect.
+assessment and the completed corrections.
 See [validation.md](validation.md) for evidence and validation limits.
 See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.
 
@@ -48,10 +48,14 @@ Use a clean Pharo 13 image with its matching changes and sources files.
 Set `SMALLGPTALK_VM` if the VM is outside the default path in `scripts/test.sh`.
 
 ```sh
-SMALLGPTALK_BASE_IMAGE=/path/to/Pharo.image bash scripts/test.sh
+SMALLGPTALK_BASE_IMAGE=/path/to/Pharo.image python3 scripts/verify.py
 ```
 
-The script copies the image to a new directory in `.build`, loads Tonel through
+See [verification](docs/verification.md) for native and live checks. The default
+command also checks compiled source, Core alone, and queued refreshes. Use
+`bash scripts/test.sh` with the same environment for SUnit only.
+
+The test script copies the image to a new directory in `.build`, loads Tonel through
 Metacello, and runs SUnit. Test failures produce a nonzero exit status. Offline
 tests do not use an OpenAI account or the Keychain.
 When available, `caffeinate` prevents idle system sleep while each Pharo process

@@ -1,5 +1,28 @@
 # Engineering principles audit — 2026-09-11
 
+## Resolution — 2026-09-11
+
+All four follow-up items below are complete at `b9589bc`:
+
+1. `f8b7a6c` preserves the active request settings through automatic compaction.
+   The regression failed first, then passed. Send and compact now share run setup.
+2. The live check now uses the exact launcher prompt. Evaluation, compaction,
+   fork, and continuation passed without a repeated mutation.
+3. `b9589bc` adds one verification command and offline CI. HTTP test servers
+   use allocated ports. Native checks use separate output directories.
+4. `06bdb43` adds a small refresh queue after measuring a burst of text updates.
+   It keeps one pending UI task and retains the complete conversation.
+   Three queue tests failed first, then passed.
+
+The final check passed 207 tests, source inspection, Core-only loading, four
+native checks, and the live example. GitHub Actions also passed. See
+[validation](../validation.md) for evidence and measurement limits, and
+[verification](verification.md) to repeat the checks.
+
+The remaining sections record the original audit at `4d24a9f`. References to
+open work, missing tests, and unmeasured behavior describe that revision.
+
+
 Audited revision: `4d24a9f` on `main`.
 
 The design generally follows the ten principles in `AGENTS.md`. One defect

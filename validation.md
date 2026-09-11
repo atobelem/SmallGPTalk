@@ -1,8 +1,8 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 203 offline
-tests with seed 904249666. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 207 offline
+tests with seed 323235140. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -462,3 +462,24 @@ The controlled 1,000-fragment experiment retained 25,000 characters. Rendering
 each state took 15,701 ms; one queued render took 31 ms on this host
 (`.build/refresh-cost.log`). This measures a burst, not all possible UI loads.
 The repeatable check is `scripts/check-refresh-cost.st`.
+
+## Unified audit verification — 2026-09-11
+
+At `b9589bc`, `python3 scripts/verify.py --native --live` passed all checks.
+Local evidence is in `.build/verify-tqcy5eks/`:
+
+- SUnit: 207 passes, no failures or errors; seed 323235140.
+- Source: 73 classes, 728 methods, no reported issues. Core-only load passed.
+- Native chat, running preview, context estimate, and evaluation checks passed.
+  All four screenshots were inspected.
+- Live OpenAI: one independently verified mutation, automatic compaction,
+  fork, manual compaction, and continuation passed with the exact two-line
+  launcher prompt. Model: `gpt-5.6-luna`. Effort: `low`.
+- Controlled burst: 1,000 immediate renders took 15,448 ms; one queued render
+  took 32 ms. Both retained 25,000 characters. This measures a queued burst,
+  not all interactive workloads. Timings are not test thresholds.
+
+[GitHub Actions passed](https://github.com/atobelem/SmallGPTalk/actions/runs/34615185876)
+on an independent Pharo 13 download. CI runs offline checks only.
+This run did not repeat browser login or native Keychain write/delete checks.
+See [verification](docs/verification.md) for commands and runtime limits.
