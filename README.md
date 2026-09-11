@@ -253,6 +253,17 @@ the token indicator does not change that policy.
 
 ## Open views and observe
 
+To open a new chat from the terminal after login:
+
+```sh
+SMALLGPTALK_BASE_IMAGE=/path/to/Pharo.image bash scripts/open-chat.sh
+```
+
+The script copies a clean Pharo 13 image and loads the current source. It opens
+a chat with the default model, low effort, and evaluate. The account uses the
+stored Keychain record. The script saves the loaded image before account use;
+it does not save the running chat. Each launch uses a separate image copy.
+
 ```smalltalk
 (SmallGPTalkChat forSession: session) open.
 (SmallGPTalkChat forSession: session) open.
