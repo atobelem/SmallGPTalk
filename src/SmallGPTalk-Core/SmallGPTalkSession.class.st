@@ -1,16 +1,20 @@
+"Own model configuration, committed conversation, tools, and one active run."
 Class {
 	#name : #SmallGPTalkSession,
 	#superclass : #Object,
-	#instVars : [ 'provider', 'model', 'messages', 'instructions', 'tools', 'maxTurns', 'requestTimeoutSeconds', 'toolOutputLimit', 'activeRun', 'lock' ],
+	#instVars : [ 'agent', 'provider', 'model', 'reasoningEffort', 'conversation', 'context', 'instructions', 'tools', 'maxTurns', 'requestTimeoutSeconds', 'toolOutputLimit', 'activeRun', 'lock' ],
 	#category : #'SmallGPTalk-Core'
 }
 
 { #category : #'initialization' }
 SmallGPTalkSession >> initialize [
 	super initialize.
-	messages := OrderedCollection new.
-	instructions := self class defaultInstructions.
-	tools := #().
+	conversation := SmallGPTalkConversation new.
+	context := SmallGPTalkContext forSession: self.
+	agent := SmallGPTalkAgent new.
+	instructions := agent instructions.
+	tools := agent newTools.
+	reasoningEffort := 'medium'.
 	maxTurns := 20.
 	requestTimeoutSeconds := 120.
 	toolOutputLimit := 20000.
@@ -19,16 +23,25 @@ SmallGPTalkSession >> initialize [
 
 { #category : #'running' }
 SmallGPTalkSession >> send: aString onEvent: aBlock [
-	| run |
-	run := SmallGPTalkRun new session: self; input: aString; observer: aBlock; yourself.
+	^ self startRun: (SmallGPTalkRun new input: aString; yourself) onEvent: aBlock
+]
+
+{ #category : 'running' }
+SmallGPTalkSession >> compactOnEvent: aBlock [
+	^ self startRun: SmallGPTalkCompactionRun new onEvent: aBlock
+]
+
+{ #category : 'private' }
+SmallGPTalkSession >> startRun: run onEvent: aBlock [
+	run session: self; observer: aBlock.
 	lock critical: [
 		activeRun ifNotNil: [ self error: 'This session has an active run.' ].
 		self validateConfiguration.
-		run reserveImage.
+		run reserveResources.
 		activeRun := run ].
 	[ run start ] on: Error do: [ :exception |
 		self releaseRun: run.
-		run releaseImage.
+		run releaseResources.
 		exception pass ].
 	^ run
 ]
@@ -50,12 +63,12 @@ SmallGPTalkSession >> releaseRun: aRun [
 
 { #category : #'private' }
 SmallGPTalkSession >> addMessage: aMessage [
-	messages add: aMessage
+	conversation addMessage: aMessage
 ]
 
 { #category : #'accessing' }
 SmallGPTalkSession >> messages [
-	^ messages copy
+	^ conversation messages
 ]
 
 { #category : #'accessing' }
@@ -147,14 +160,42 @@ SmallGPTalkSession >> toolOutputLimit: anObject [
 		toolOutputLimit := anObject ]
 ]
 
-{ #category : #'defaults' }
-SmallGPTalkSession class >> defaultInstructions [
-	^ 'You are SmallGPTalk, a Smalltalk assistant in Pharo.
-Help the user understand, write, and test Smalltalk code.
-Keep answers short and clear. Use the user''s language.
-Use only the tools supplied for this session.
-When image tools are available, they act on the same Pharo image that runs you.
-Inspect relevant code before you change it. Test changes when possible.
-Image tools have full image access. Changes remain after cancellation.
-Report what you changed, what you tested, and what you could not verify.'
+{ #category : #'accessing' }
+SmallGPTalkSession >> agent [
+	^ agent
 ]
+
+{ #category : #'accessing' }
+SmallGPTalkSession >> agent: anAgent [
+	| newInstructions newTools |
+	lock critical: [
+		(activeRun isNotNil or: [ conversation isEmpty not ]) ifTrue: [
+			self error: 'Set the agent before the conversation starts.' ].
+		newInstructions := anAgent instructions.
+		newTools := anAgent newTools.
+		agent := anAgent.
+		instructions := newInstructions.
+		tools := newTools ]
+]
+
+{ #category : #'accessing' }
+SmallGPTalkSession >> reasoningEffort [
+	^ reasoningEffort
+]
+
+{ #category : #'accessing' }
+SmallGPTalkSession >> reasoningEffort: aString [
+	lock critical: [
+		activeRun ifNotNil: [ self error: 'Do not change a session during a run.' ].
+		(aString isString and: [ aString isNotEmpty ])
+			ifFalse: [ self error: 'Select a valid reasoning effort.' ].
+		reasoningEffort := aString ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkSession >> conversation [
+	^ conversation
+]
+
+{ #category : 'accessing' }
+SmallGPTalkSession >> context [ ^ context ]

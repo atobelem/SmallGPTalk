@@ -1,3 +1,4 @@
+"Share login and credential synchronization across account objects for one store."
 Class {
 	#name : #SmallGPTalkOpenAIAuthState,
 	#superclass : #Object,
@@ -6,7 +7,7 @@ Class {
 	#category : #'SmallGPTalk-OpenAI'
 }
 
-{ #category : #initialization }
+{ #category : 'class initialization' }
 SmallGPTalkOpenAIAuthState class >> initialize [
 	NativeStates := Dictionary new.
 	OtherStates := WeakIdentityKeyDictionary new.

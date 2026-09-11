@@ -1,3 +1,4 @@
+"Collect event stream fragments and validate complete assistant responses."
 Class {
 	#name : #SmallGPTalkOpenAIStream,
 	#superclass : #Object,
@@ -148,6 +149,8 @@ SmallGPTalkOpenAIStream >> addArguments: anEvent [
 	index := anEvent at: 'output_index' ifAbsent: [
 		indices at: itemId ifAbsent: [
 			self error: 'The tool argument event has no output index.' ] ].
+	(index isInteger and: [ index >= 0 ]) ifFalse: [
+		self error: 'The output index must be a non-negative integer.' ].
 	itemId ifNotNil: [ indices at: itemId put: index ].
 	stream := fragments at: index ifAbsentPut: [ String new writeStream ].
 	stream nextPutAll: (self string: 'delta' in: anEvent)
@@ -216,9 +219,7 @@ SmallGPTalkOpenAIStream >> completedOutput [
 { #category : #'private - conversion' }
 SmallGPTalkOpenAIStream >> reconcileOutput: output [
 	| result |
-	completedItems keysDo: [ :index |
-		index >= output size ifTrue: [
-			self error: 'The terminal response has a missing output item.' ] ].
+	self validateOutputReferences: output.
 	result := output copy.
 	completedItems keysAndValuesDo: [ :index :item |
 		| final |
@@ -293,4 +294,20 @@ SmallGPTalkOpenAIStream >> readFrom: aStream run: aRun [
 SmallGPTalkOpenAIStream >> finish [
 	message ifNil: [ self error: 'The model stream ended before a complete response.' ].
 	^ message
+]
+
+{ #category : 'private - validation' }
+SmallGPTalkOpenAIStream >> validateOutputReferences: output [
+	pendingItems do: [ :index |
+		index >= output size ifTrue: [
+			self error: 'The terminal response has a missing output item.' ] ].
+	fragments keysDo: [ :index |
+		(index >= output size or: [ ((output at: index + 1) at: 'type' ifAbsent: [ '' ]) ~= 'function_call' ]) ifTrue: [
+			self error: 'The tool arguments have no completed tool call.' ] ].
+	completedItems keysDo: [ :index |
+		index >= output size ifTrue: [
+			self error: 'The terminal response has a missing output item.' ] ].
+	indices keysAndValuesDo: [ :itemId :index |
+		(index >= output size or: [ ((output at: index + 1) at: 'id' ifAbsent: [ nil ]) ~= itemId ]) ifTrue: [
+			self error: 'The terminal response changed an output item identifier.' ] ].
 ]

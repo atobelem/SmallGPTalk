@@ -1,3 +1,4 @@
+"Bind macOS Security framework functions through threaded FFI."
 Class {
 	#name : 'SmallGPTalkSecurityLibrary',
 	#superclass : 'FFILibrary',
@@ -5,7 +6,7 @@ Class {
 	#package : 'SmallGPTalk-OpenAI'
 }
 
-{ #category : 'accessing' }
+{ #category : 'accessing - platform' }
 SmallGPTalkSecurityLibrary >> macLibraryName [
 	^ '/System/Library/Frameworks/Security.framework/Security'
 ]

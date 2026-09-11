@@ -1,3 +1,4 @@
+"Return controlled model responses and count requests in offline tests."
 Class {
 	#name : #SmallGPTalkCoreTestProvider,
 	#superclass : #Object,
@@ -25,8 +26,4 @@ SmallGPTalkCoreTestProvider >> requestCount [
 SmallGPTalkCoreTestProvider >> respondTo: aSession onText: aBlock run: aRun [
 	requestCount := requestCount + 1.
 	^ responseBlock value: aSession value: aBlock value: aRun
-]
-
-{ #category : #accessing }
-SmallGPTalkCoreTestProvider >> reasoningEffort: aString [
 ]

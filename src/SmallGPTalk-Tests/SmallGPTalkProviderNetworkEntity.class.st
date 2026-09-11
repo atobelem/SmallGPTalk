@@ -1,3 +1,4 @@
+"Provide a streamed response body for local transport tests."
 Class {
 	#name : #SmallGPTalkProviderNetworkEntity,
 	#superclass : #ZnEntity,
@@ -5,7 +6,7 @@ Class {
 	#category : #'SmallGPTalk-Tests'
 }
 
-{ #category : #'accessing' }
+{ #category : 'testing' }
 SmallGPTalkProviderNetworkEntity class >> designatedMimeType [
 	^ nil
 ]

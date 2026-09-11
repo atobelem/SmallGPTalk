@@ -1,54 +1,25 @@
+"Execute one user request, supervise operations, and publish ordered progress events."
 Class {
 	#name : #SmallGPTalkRun,
 	#superclass : #Object,
-	#instVars : [ 'session', 'input', 'observer', 'state', 'process', 'completion', 'observerErrors', 'result', 'error', 'cancellationRequested', 'imageLease', 'stateLock', 'pendingCalls' ],
-	#classVars : [ 'ImageLock', 'ImageRun' ],
+	#instVars : [ 'session', 'input', 'observer', 'state', 'process', 'completion', 'observerErrors', 'result', 'error', 'cancellationRequested', 'reservedResources', 'stateLock', 'pendingCalls', 'cleanupErrors', 'modelTurns' ],
 	#category : #'SmallGPTalk-Core'
 }
 
-{ #category : #'initialization' }
-SmallGPTalkRun class >> initialize [
-	ImageLock := Semaphore forMutualExclusion
-]
-
-{ #category : #'private' }
-SmallGPTalkRun class >> reserveImageFor: aRun [
-	ImageLock ifNil: [ self initialize ].
-	ImageLock critical: [
-		ImageRun ifNotNil: [ self error: 'This image has an active run with image tools.' ].
-		ImageRun := aRun ]
-]
-
-{ #category : #'private' }
-SmallGPTalkRun class >> releaseImageFor: aRun [
-	ImageLock critical: [ ImageRun == aRun ifTrue: [ ImageRun := nil ] ]
-]
 
 { #category : #'initialization' }
 SmallGPTalkRun >> initialize [
 	super initialize.
 	state := #pending.
+	modelTurns := 0.
 	completion := Semaphore new.
 	observerErrors := OrderedCollection new.
+	cleanupErrors := OrderedCollection new.
 	cancellationRequested := false.
-	imageLease := false.
+	reservedResources := OrderedCollection new.
 	stateLock := Semaphore forMutualExclusion.
 	pendingCalls := OrderedCollection new.
 	observer := [ :event | ]
-]
-
-{ #category : #'private' }
-SmallGPTalkRun >> reserveImage [
-	(session tools anySatisfy: #requiresImage) ifTrue: [
-		self class reserveImageFor: self.
-		imageLease := true ]
-]
-
-{ #category : #'private' }
-SmallGPTalkRun >> releaseImage [
-	imageLease ifTrue: [
-		self class releaseImageFor: self.
-		imageLease := false ]
 ]
 
 { #category : #'private' }
@@ -109,16 +80,19 @@ SmallGPTalkRun >> supervise: aBlock timeoutSeconds: seconds [
 		[ worker isTerminated ] whileFalse: [ (Delay forMilliseconds: 10) wait ] ]
 ]
 
-{ #category : #'private' }
+{ #category : 'private' }
 SmallGPTalkRun >> execute [
+	self finishWithState: self executeRequest
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> executeRequest [
 	| finalState |
 	finalState := #failed.
 	[
 		[
 			stateLock critical: [ cancellationRequested ifFalse: [ state := #running ] ].
-			session addMessage: (SmallGPTalkMessage user: input).
-			self checkCancellation.
-			result := self agentLoop.
+			result := self performRequest.
 			self checkCancellation.
 			finalState := #completed
 		] on: SmallGPTalkCancelled do: [ :exception |
@@ -127,16 +101,20 @@ SmallGPTalkRun >> execute [
 	] on: Error , Halt do: [ :exception |
 		error := SmallGPTalkFailure fromException: exception.
 		finalState := #failed ].
+	^ finalState
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> finishWithState: requestedState [
+	| finalState |
+	finalState := requestedState.
 	[
 		[ self cancelPendingCalls ] on: Error , Halt do: [ :exception |
 			error := SmallGPTalkFailure fromException: exception. finalState := #failed ].
-		stateLock critical: [
-			(cancellationRequested and: [ finalState = #completed ]) ifTrue: [
-				finalState := #cancelled.
-				error := SmallGPTalkFailure fromException: (SmallGPTalkCancelled new messageText: 'The run was cancelled.') ].
-			state := finalState.
-			state = #completed ifFalse: [ result := nil ] ].
-		self releaseImage.
+		[ self releaseResources ] on: Error , Halt do: [ :exception |
+			error ifNil: [ error := SmallGPTalkFailure fromException: exception ].
+			finalState := #failed ].
+		self setFinalState: finalState.
 		session releaseRun: self.
 		self emit: (Dictionary new
 			at: #type put: #finished;
@@ -147,11 +125,24 @@ SmallGPTalkRun >> execute [
 	] ensure: [ completion signal ]
 ]
 
+{ #category : 'private' }
+SmallGPTalkRun >> setFinalState: requestedState [
+	| finalState |
+	finalState := requestedState.
+	stateLock critical: [
+		(cancellationRequested and: [ finalState = #completed ]) ifTrue: [
+			finalState := #cancelled.
+			error := SmallGPTalkFailure fromException: (SmallGPTalkCancelled new messageText: 'The run was cancelled.') ].
+		state := finalState.
+		state = #completed ifFalse: [ result := nil ] ].
+]
+
 { #category : #'private' }
 SmallGPTalkRun >> agentLoop [
 	| response |
 	1 to: session maxTurns do: [ :turn |
 		self checkCancellation.
+		session context compactIfNeededUsing: self.
 		response := self requestResponse.
 		self validateResponse: response.
 		session addMessage: response.
@@ -166,6 +157,7 @@ SmallGPTalkRun >> agentLoop [
 
 { #category : #'private' }
 SmallGPTalkRun >> requestResponse [
+	self consumeModelTurn.
 	^ self supervise: [
 		session provider
 			respondTo: session
@@ -198,12 +190,7 @@ SmallGPTalkRun >> executeCall: aCall [
 
 { #category : #'private' }
 SmallGPTalkRun >> boundResult: aResult [
-	| marker keep |
-	aResult text size <= self toolOutputLimit ifTrue: [ ^ aResult ].
-	marker := String lf , '[Output truncated]'.
-	keep := (self toolOutputLimit - marker size) max: 0.
-	aResult text: (aResult text first: keep) , (marker first: (marker size min: self toolOutputLimit)); truncated: true.
-	^ aResult
+	^ aResult limitTextTo: self toolOutputLimit
 ]
 
 { #category : #'private' }
@@ -248,7 +235,7 @@ SmallGPTalkRun >> result [
 	^ result
 ]
 
-{ #category : #'accessing' }
+{ #category : 'error handling' }
 SmallGPTalkRun >> error [
 	^ error
 ]
@@ -287,4 +274,62 @@ SmallGPTalkRun >> validateResponse: aMessage [
 		(call name isString and: [ call name isNotEmpty ]) ifFalse: [ self error: 'A tool call must have a name.' ].
 		(identifiers includes: call id) ifTrue: [ self error: 'Tool call identifiers must be unique.' ].
 		identifiers add: call id ]
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> reserveResources [
+	[
+		session tools do: [ :tool |
+			tool executionResources do: [ :resource |
+				(reservedResources includes: resource) ifFalse: [
+					resource reserveFor: self.
+					reservedResources add: resource ] ] ]
+	] on: Error , Halt do: [ :exception |
+		[ self releaseResources ] on: Error , Halt do: [ :ignored | ].
+		exception pass ]
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> releaseResources [
+	| firstFailure |
+	reservedResources reverseDo: [ :resource |
+		[ resource releaseFor: self ] on: Error , Halt do: [ :exception |
+			cleanupErrors add: (SmallGPTalkFailure fromException: exception).
+			firstFailure ifNil: [ firstFailure := exception ] ] ].
+	reservedResources removeAll.
+	firstFailure ifNotNil: [ firstFailure signal ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkRun >> cleanupErrors [
+	^ cleanupErrors copy
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> performRequest [
+	session addMessage: (SmallGPTalkMessage user: input).
+	self checkCancellation.
+	^ self agentLoop
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> commitContext: aBlock [
+	stateLock critical: [ self checkCancellation. aBlock value ]
+]
+
+{ #category : 'accessing' }
+SmallGPTalkRun >> contextSnapshot [
+	| snapshot |
+	snapshot := session ifNil: [ Dictionary new ] ifNotNil: [ session context snapshot ].
+	^ snapshot
+		at: #run put: self;
+		at: #toolCall put: (pendingCalls ifEmpty: [ nil ] ifNotEmpty: [ pendingCalls first ]);
+		yourself
+]
+
+{ #category : 'private' }
+SmallGPTalkRun >> consumeModelTurn [
+	self checkCancellation.
+	modelTurns >= session maxTurns ifTrue: [ self error: 'The run reached its model turn limit.' ].
+	modelTurns := modelTurns + 1
 ]

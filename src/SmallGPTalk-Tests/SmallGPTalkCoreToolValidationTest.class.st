@@ -44,15 +44,15 @@ SmallGPTalkCoreToolValidationTest >> testAcceptsAndRejectsScalarTypes [
 		with: { 3. 1.5. true. nil }
 		do: [ :type :value |
 			self useValueSchema: (Dictionary new at: 'type' put: type; yourself).
-			self shouldnt: [ tool validateArguments: (Dictionary new at: 'value' put: value; yourself) ] raise: Error.
+			self assertValidArguments: (Dictionary new at: 'value' put: value; yourself).
 			self should: [ tool validateArguments: (Dictionary new at: 'value' put: 'invalid'; yourself) ] raise: Error ]
 ]
 
 { #category : 'tests' }
 SmallGPTalkCoreToolValidationTest >> testAcceptsNullableType [
 	self useValueSchema: (Dictionary new at: 'type' put: #('string' 'null'); yourself).
-	self shouldnt: [ tool validateArguments: (Dictionary new at: 'value' put: nil; yourself) ] raise: Error.
-	self shouldnt: [ tool validateArguments: (Dictionary new at: 'value' put: 'text'; yourself) ] raise: Error.
+	self assertValidArguments: (Dictionary new at: 'value' put: nil; yourself).
+	self assertValidArguments: (Dictionary new at: 'value' put: 'text'; yourself).
 	self should: [ tool validateArguments: (Dictionary new at: 'value' put: 5; yourself) ] raise: Error
 ]
 
@@ -62,7 +62,7 @@ SmallGPTalkCoreToolValidationTest >> testRejectsEnumValue [
 		at: 'type' put: 'string';
 		at: 'enum' put: #('instance' 'class');
 		yourself).
-	self shouldnt: [ tool validateArguments: (Dictionary new at: 'value' put: 'class'; yourself) ] raise: Error.
+	self assertValidArguments: (Dictionary new at: 'value' put: 'class'; yourself).
 	self should: [ tool validateArguments: (Dictionary new at: 'value' put: 'package'; yourself) ] raise: Error
 ]
 
@@ -95,7 +95,7 @@ SmallGPTalkCoreToolValidationTest >> testValidatesAdditionalPropertySchema [
 		at: 'type' put: 'object';
 		at: 'additionalProperties' put: (Dictionary new at: 'type' put: 'integer'; yourself);
 		yourself).
-	self shouldnt: [ tool validateArguments: (Dictionary new at: 'count' put: 3; yourself) ] raise: Error.
+	self assertValidArguments: (Dictionary new at: 'count' put: 3; yourself).
 	self should: [ tool validateArguments: (Dictionary new at: 'count' put: 'three'; yourself) ] raise: Error
 ]
 
@@ -113,11 +113,16 @@ SmallGPTalkCoreToolValidationTest >> testValidatesNestedArrayItems [
 		at: 'type' put: 'array';
 		at: 'items' put: itemSchema;
 		yourself).
-	self shouldnt: [ tool validateArguments: (Dictionary new
+	self assertValidArguments: (Dictionary new
 		at: 'value' put: { Dictionary new at: 'count' put: 3; yourself };
-		yourself) ] raise: Error.
+		yourself).
 	self should: [ tool validateArguments: (Dictionary new
 		at: 'value' put: { Dictionary new at: 'count' put: 'three'; yourself };
 		yourself) ] raise: Error.
 	self should: [ tool validateArguments: (Dictionary new at: 'value' put: 'text'; yourself) ] raise: Error
+]
+
+{ #category : 'private' }
+SmallGPTalkCoreToolValidationTest >> assertValidArguments: arguments [
+	self assert: (tool validateArguments: arguments) identicalTo: arguments
 ]

@@ -1,3 +1,4 @@
+"Keep error details without retaining the exception context or its local variables."
 Class {
 	#name : #SmallGPTalkFailure,
 	#superclass : #Object,

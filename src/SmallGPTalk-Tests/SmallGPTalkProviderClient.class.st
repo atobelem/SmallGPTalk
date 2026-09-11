@@ -1,3 +1,4 @@
+"Supply controlled HTTP responses for provider tests."
 Class {
 	#name : #SmallGPTalkProviderClient,
 	#superclass : #ZnClient,
@@ -57,7 +58,7 @@ SmallGPTalkProviderClient >> capturedRequest [
 	^ capturedRequest
 ]
 
-{ #category : #requesting }
+{ #category : 'operations' }
 SmallGPTalkProviderClient >> post [
 	postCount := postCount + 1.
 	capturedRequest := request copy.
@@ -69,7 +70,7 @@ SmallGPTalkProviderClient >> post [
 	^ self contents
 ]
 
-{ #category : #requesting }
+{ #category : 'operations' }
 SmallGPTalkProviderClient >> get [
 	getCount := getCount + 1.
 	capturedRequest := request copy.
@@ -78,14 +79,14 @@ SmallGPTalkProviderClient >> get [
 	^ self contents
 ]
 
-{ #category : #accessing }
+{ #category : 'accessing - response' }
 SmallGPTalkProviderClient >> contents [
 	^ self streaming
 		ifTrue: [ replyBody utf8Encoded readStream ]
 		ifFalse: [ replyBody ]
 ]
 
-{ #category : #requesting }
+{ #category : 'cleanup' }
 SmallGPTalkProviderClient >> close [
 	closeCount := closeCount + 1.
 	super close

@@ -1,3 +1,4 @@
+"Provide output limits, supervision, and image access for image tools."
 Class {
 	#name : 'SmallGPTalkImageTool',
 	#superclass : 'SmallGPTalkTool',
@@ -37,11 +38,6 @@ SmallGPTalkImageTool >> timeoutSeconds: aNumber [
 	timeoutSeconds := aNumber
 ]
 
-{ #category : 'testing' }
-SmallGPTalkImageTool >> requiresImage [
-	^ true
-]
-
 { #category : 'executing' }
 SmallGPTalkImageTool >> execute: arguments context: aRun [
 	self validateArguments: arguments.
@@ -58,45 +54,15 @@ SmallGPTalkImageTool >> performTool: arguments context: aRun [
 
 { #category : 'private' }
 SmallGPTalkImageTool >> resultFor: aDictionary context: aRun [
-	| result text limit suffix |
-	text := STONJSON toString: aDictionary.
-	limit := outputLimit min: aRun toolOutputLimit.
-	result := SmallGPTalkToolResult text: text.
+	| result |
+	result := SmallGPTalkToolResult text: (STONJSON toString: aDictionary).
 	(aDictionary at: 'truncated' ifAbsent: [ false ]) ifTrue: [ result truncated: true ].
-	text size > limit ifTrue: [
-		suffix := String lf , '[Output truncated]'.
-		result
-			text: (text first: (limit - suffix size max: 0)) , (suffix first: (limit min: suffix size));
-			truncated: true ].
-	^ result
-]
-
-{ #category : 'private' }
-SmallGPTalkImageTool >> classNamed: aString [
-	| candidate |
-	candidate := Smalltalk globals at: aString asSymbol ifAbsent: [
-		self error: 'The class does not exist: ' , aString , '.' ].
-	candidate isClass ifFalse: [ self error: 'The name does not identify a class.' ].
-	^ candidate
-]
-
-{ #category : 'private' }
-SmallGPTalkImageTool >> behaviorFor: arguments [
-	| class |
-	class := self classNamed: (arguments at: 'class').
-	^ (arguments at: 'side' ifAbsent: [ 'instance' ]) = 'class'
-		ifTrue: [ class class ]
-		ifFalse: [ class ]
+	^ result limitTextTo: (outputLimit min: aRun toolOutputLimit)
 ]
 
 { #category : 'private - schema' }
 SmallGPTalkImageTool >> stringSchema [
 	^ Dictionary new at: 'type' put: 'string'; yourself
-]
-
-{ #category : 'private - schema' }
-SmallGPTalkImageTool >> sideSchema [
-	^ self stringSchema at: 'enum' put: #('instance' 'class'); yourself
 ]
 
 { #category : 'private - schema' }
@@ -107,4 +73,14 @@ SmallGPTalkImageTool >> schema: properties required: required [
 		at: 'required' put: required;
 		at: 'additionalProperties' put: false;
 		yourself
+]
+
+{ #category : 'sessions' }
+SmallGPTalkImageTool >> newForSession [
+	^ self class new outputLimit: outputLimit; timeoutSeconds: timeoutSeconds; yourself
+]
+
+{ #category : 'execution resources' }
+SmallGPTalkImageTool >> executionResources [
+	^ { SmallGPTalkImageAccess }
 ]

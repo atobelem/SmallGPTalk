@@ -79,8 +79,18 @@ Completed tools are not replayed by request recovery.
 
 ## Reasoning effort
 
-The provider sends `reasoning.effort`, with `medium` as its default.
+The provider sends the session reasoning effort in `reasoning.effort`.
+A new session defaults to `medium`.
 The chat reads `supported_reasoning_levels` from the account model catalog.
 Each entry supplies an `effort` value. The chat offers those values only.
 The chat selects `gpt-5.6-luna` when that model is in the catalog.
 A live request with this model and medium effort executed evaluate successfully.
+
+## Active context
+
+Requests use `session context messages`. The full conversation remains in
+`session messages` after compaction. A summary request uses the same provider,
+model, and reasoning effort with summary instructions and no tool definitions.
+A summary that contains tool calls is rejected. The original provider items
+remain in archived conversation messages; the active summary is plain text.
+The context inspector exposes the request body without credential headers.

@@ -1,3 +1,4 @@
+"Supply test credentials and count renewal requests without account access."
 Class {
 	#name : #SmallGPTalkProviderAccount,
 	#superclass : #Object,

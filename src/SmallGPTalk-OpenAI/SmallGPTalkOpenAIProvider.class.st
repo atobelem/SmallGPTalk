@@ -1,7 +1,8 @@
+"Convert session history to OpenAI requests and return complete model responses."
 Class {
 	#name : #SmallGPTalkOpenAIProvider,
 	#superclass : #Object,
-	#instVars : [ 'account', 'clientFactory', 'clientVersion', 'catalogTimeoutSeconds', 'reasoningEffort' ],
+	#instVars : [ 'account', 'clientFactory', 'clientVersion', 'catalogTimeoutSeconds' ],
 	#category : #'SmallGPTalk-OpenAI'
 }
 
@@ -25,8 +26,7 @@ SmallGPTalkOpenAIProvider >> initialize [
 	super initialize.
 	clientFactory := [ SmallGPTalkOpenAIHTTPClient new ].
 	clientVersion := '0.153.4'.
-	catalogTimeoutSeconds := 120.
-	reasoningEffort := 'medium'
+	catalogTimeoutSeconds := 120
 ]
 
 { #category : #accessing }
@@ -175,15 +175,16 @@ SmallGPTalkOpenAIProvider >> checkResponse: response [
 { #category : #'private - conversion' }
 SmallGPTalkOpenAIProvider >> requestBodyFor: aSession [
 	| body |
+	self validateReasoningEffort: aSession reasoningEffort.
 	(aSession model isString and: [ aSession model trimBoth isNotEmpty ])
 		ifFalse: [ self error: 'Set an explicit OpenAI model identifier.' ].
 	body := Dictionary new
 		at: 'model' put: aSession model;
-		at: 'reasoning' put: (Dictionary new at: 'effort' put: reasoningEffort; yourself);
+		at: 'reasoning' put: (Dictionary new at: 'effort' put: aSession reasoningEffort; yourself);
 		at: 'store' put: false;
 		at: 'stream' put: true;
 		at: 'instructions' put: aSession instructions;
-		at: 'input' put: (self inputFor: aSession messages);
+		at: 'input' put: (self inputFor: aSession context messages);
 		at: 'include' put: #('reasoning.encrypted_content');
 		at: 'tool_choice' put: 'auto';
 		at: 'parallel_tool_calls' put: true;
@@ -268,14 +269,8 @@ SmallGPTalkOpenAIProvider >> models [
 	^ (self modelOptions collect: [ :model | model at: 'slug' ]) asArray
 ]
 
-{ #category : #accessing }
-SmallGPTalkOpenAIProvider >> reasoningEffort [
-	^ reasoningEffort
-]
-
-{ #category : #accessing }
-SmallGPTalkOpenAIProvider >> reasoningEffort: aString [
-	(#('none' 'minimal' 'low' 'medium' 'high' 'xhigh' 'max' 'ultra') includes: aString)
-		ifFalse: [ self error: 'Select a valid reasoning effort.' ].
-	reasoningEffort := aString
+{ #category : 'validation' }
+SmallGPTalkOpenAIProvider >> validateReasoningEffort: effort [
+	(#('none' 'minimal' 'low' 'medium' 'high' 'xhigh' 'max' 'ultra') includes: effort)
+		ifFalse: [ self error: 'Select a valid OpenAI reasoning effort.' ]
 ]

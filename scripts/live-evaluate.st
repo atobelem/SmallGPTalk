@@ -1,9 +1,9 @@
 | provider session run results |
 provider := SmallGPTalkOpenAIProvider account: SmallGPTalkOpenAIAccount new.
-provider reasoningEffort: 'medium'.
 results := OrderedCollection new.
 session := SmallGPTalkSession new
  provider: provider;
+ reasoningEffort: 'medium';
  model: 'gpt-5.6-luna';
  tools: SmallGPTalkImageTools all;
  yourself.

@@ -29,10 +29,10 @@ SmallGPTalkCoreRunTest >> start [
 
 { #category : #'helpers' }
 SmallGPTalkCoreRunTest >> waitFor: run [
-	| done |
+	| done waiter |
 	done := Semaphore new.
-	[ run wait. done signal ] fork.
-	self deny: (done waitTimeoutMilliseconds: 3000) description: 'The run did not stop.'
+	waiter := [ run wait. done signal ] fork.
+	[ self deny: (done waitTimeoutMilliseconds: 3000) description: 'The run did not stop.' ] ensure: [ waiter terminate ]
 ]
 
 { #category : #'helpers' }
@@ -369,7 +369,7 @@ SmallGPTalkCoreRunTest >> testToolsAccessorDoesNotExposeCollectionMutation [
 	exposed := session tools.
 	exposed at: 1 put: (SmallGPTalkCoreTestTool new imageTool: true; yourself).
 	self assert: session tools first identicalTo: tool.
-	self deny: session tools first requiresImage
+	self assert: session tools first executionResources isEmpty
 ]
 
 { #category : #'tests' }
@@ -419,4 +419,117 @@ SmallGPTalkCoreRunTest >> testFailureDoesNotKeepExceptionContexts [
 	self assert: run error messageText equals: 'The request failed.'.
 	self deny: (run error respondsTo: #signalContext).
 	self assert: SmallGPTalkFailure allInstVarNames equals: #(exceptionClassName messageText status)
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testFailedResourceReservationReleasesEarlierResources [
+	| run |
+	tool executionResources: { SmallGPTalkImageAccess. Object new }.
+	self should: [ self start ] raise: Error.
+	self assert: session activeRun isNil.
+	self assert: session messages isEmpty.
+	tool executionResources: { SmallGPTalkImageAccess. SmallGPTalkImageAccess }.
+	provider responseBlock: [ :aSession :onText :aRun | SmallGPTalkMessage assistant: 'Done.' ].
+	run := self start.
+	self waitFor: run.
+	self assert: run state equals: #completed
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testReleaseFailureFinishesRunAndReleasesOtherResources [
+	| broken other run terminal |
+	broken := SmallGPTalkTestResource new failRelease: true; yourself.
+	other := SmallGPTalkTestResource new.
+	tool executionResources: { other. broken }.
+	run := self start.
+	self waitFor: run.
+	self assert: run state equals: #failed.
+	self assert: session activeRun isNil.
+	self assert: run result isNil.
+	self assert: run cleanupErrors size equals: 1.
+	self assert: other releaseCount equals: 1.
+	self assert: broken releaseCount equals: 1.
+	terminal := events select: [ :event | (event at: #type) = #finished ].
+	self assert: terminal size equals: 1.
+	self assert: (terminal first at: #state) equals: #failed.
+	self assert: session messages last text equals: 'Complete.'.
+	broken failRelease: false.
+	run := self start.
+	self waitFor: run.
+	self assert: run state equals: #completed
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testReservationFailureKeepsOriginalErrorWhenCleanupFails [
+	| broken message |
+	broken := SmallGPTalkTestResource new failRelease: true; yourself.
+	tool executionResources: { broken. Object new }.
+	[ self start ] on: Error do: [ :error | message := error messageText ].
+	self assert: (message includesSubstring: 'reserveFor:').
+	self assert: broken releaseCount equals: 1.
+	self assert: session activeRun isNil
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testRepeatedCallIdDoesNotExecuteAgain [
+	| run response |
+	response := SmallGPTalkMessage assistant: ''.
+	response toolCalls: { SmallGPTalkToolCall id: 'repeated' name: 'fixture'
+		arguments: (Dictionary new at: 'text' put: 'Hello'; yourself) }.
+	provider responseBlock: [ :aSession :onText :aRun | response copy ].
+	run := self start.
+	self waitFor: run.
+	self assert: run state equals: #failed.
+	self assert: tool executionCount equals: 1.
+	self assert: session messages size equals: 3.
+	self assert: (run error messageText includesSubstring: 'unique in the conversation')
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testRequestFailureKeepsOriginalErrorWhenCleanupFails [
+	| broken run terminal |
+	broken := SmallGPTalkTestResource new failRelease: true; yourself.
+	tool executionResources: { broken }.
+	provider responseBlock: [ :aSession :onText :aRun | self error: 'Model request failed.' ].
+	run := self start.
+	self waitFor: run.
+	self assert: run state equals: #failed.
+	self assert: run error messageText equals: 'Model request failed.'.
+	self assert: run cleanupErrors size equals: 1.
+	self assert: run cleanupErrors first messageText equals: 'Resource release failed.'.
+	self assert: broken releaseCount equals: 1.
+	self assert: session activeRun isNil.
+	self assert: run result isNil.
+	self assert: session messages size equals: 1.
+	terminal := events select: [ :event | (event at: #type) = #finished ].
+	self assert: terminal size equals: 1.
+	self assert: (terminal first at: #error) identicalTo: run error
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testOutputLimitPreservesResultIdentityAndFlags [
+	| run result |
+	run := SmallGPTalkRun new session: session; yourself.
+	session toolOutputLimit: 40.
+	result := SmallGPTalkToolResult error: 'Short error.'.
+	self assert: (run boundResult: result) identicalTo: result.
+	self assert: result text equals: 'Short error.'.
+	self assert: result isError.
+	self deny: result truncated.
+	result text: (String new: 100 withAll: $x).
+	self assert: (run boundResult: result) identicalTo: result.
+	self assert: result isError.
+	self assert: result truncated.
+	self assert: result text size equals: 40
+]
+
+{ #category : 'tests' }
+SmallGPTalkCoreRunTest >> testOutputLimitSmallerThanMarker [
+	| run result |
+	run := SmallGPTalkRun new session: session; yourself.
+	#(1 5 18 19 20) do: [ :limit |
+		session toolOutputLimit: limit.
+		result := run boundResult: (SmallGPTalkToolResult text: (String new: 100 withAll: $x)).
+		self assert: result text size equals: limit.
+		self assert: result truncated ]
 ]

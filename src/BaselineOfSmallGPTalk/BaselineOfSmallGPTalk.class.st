@@ -1,3 +1,4 @@
+"Load the API, optional chat, and test packages with their required packages."
 Class {
 	#name : 'BaselineOfSmallGPTalk',
 	#superclass : 'BaselineOf',

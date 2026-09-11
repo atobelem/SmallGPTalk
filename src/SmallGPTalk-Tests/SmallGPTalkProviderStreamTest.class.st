@@ -339,3 +339,48 @@ SmallGPTalkProviderStreamTest >> testReasoningItemsCannotHideOrphanText [
 	self should: [ parser consume: (self event: '{"type":"response.completed","response":{"status":"completed","output":[]}}') ]
 		raise: Error
 ]
+
+{ #category : 'tests' }
+SmallGPTalkProviderStreamTest >> testTerminalCannotOmitAnAddedItem [
+	| parser |
+	parser := SmallGPTalkOpenAIStream new.
+	parser consume: (self event: '{"type":"response.output_item.added","output_index":1,"item":{"type":"function_call","id":"fc_missing","arguments":""}}').
+	self should: [ parser consume: (self event: self completedText) ] raise: Error.
+	self should: [ parser finish ] raise: Error
+]
+
+{ #category : 'tests' }
+SmallGPTalkProviderStreamTest >> testTerminalCannotOmitArgumentFragments [
+	| parser |
+	parser := SmallGPTalkOpenAIStream new.
+	parser consume: (self event: '{"type":"response.function_call_arguments.delta","output_index":1,"delta":"{}"}').
+	self should: [ parser consume: (self event: self completedText) ] raise: Error.
+	self should: [ parser finish ] raise: Error
+]
+
+{ #category : 'tests' }
+SmallGPTalkProviderStreamTest >> testTerminalCannotReplaceToolFragmentsWithText [
+	| parser |
+	parser := SmallGPTalkOpenAIStream new.
+	parser consume: (self event: '{"type":"response.function_call_arguments.delta","output_index":0,"delta":"{}"}').
+	self should: [ parser consume: (self event: self completedText) ] raise: Error.
+	self should: [ parser finish ] raise: Error
+]
+
+{ #category : 'tests' }
+SmallGPTalkProviderStreamTest >> testArgumentFragmentsRequireAValidIndex [
+	#(-1 'zero') do: [ :index |
+		| event |
+		event := Dictionary new at: 'type' put: 'response.function_call_arguments.delta';
+			at: 'output_index' put: index; at: 'delta' put: '{}'; yourself.
+		self should: [ SmallGPTalkOpenAIStream new consume: (self event: (STONJSON toString: event)) ] raise: Error ]
+]
+
+{ #category : 'tests' }
+SmallGPTalkProviderStreamTest >> testTerminalCannotReplaceAnAddedItem [
+	| parser |
+	parser := SmallGPTalkOpenAIStream new.
+	parser consume: (self event: '{"type":"response.output_item.added","output_index":0,"item":{"type":"function_call","id":"fc_missing","arguments":""}}').
+	self should: [ parser consume: (self event: self completedText) ] raise: Error.
+	self should: [ parser finish ] raise: Error
+]

@@ -1,3 +1,4 @@
+"Store one OpenAI credential record in the macOS login Keychain."
 Class {
 	#name : 'SmallGPTalkKeychainStore',
 	#superclass : 'Object',
@@ -184,7 +185,7 @@ SmallGPTalkKeychainStore >> write: aDictionary [
 		ensure: [ bytes atAllPut: 0 ]
 ]
 
-{ #category : 'accessing' }
+{ #category : 'credentials' }
 SmallGPTalkKeychainStore >> delete [
 	self withQueryDo: [ :query :keychain |
 		| status |

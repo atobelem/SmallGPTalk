@@ -1,3 +1,4 @@
+"Bind the macOS Core Foundation functions used by the credential store."
 Class {
 	#name : 'SmallGPTalkCoreFoundationLibrary',
 	#superclass : 'FFILibrary',
@@ -5,7 +6,7 @@ Class {
 	#package : 'SmallGPTalk-OpenAI'
 }
 
-{ #category : 'accessing' }
+{ #category : 'accessing - platform' }
 SmallGPTalkCoreFoundationLibrary >> macLibraryName [
 	^ '/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation'
 ]

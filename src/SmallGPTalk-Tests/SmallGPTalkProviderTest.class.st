@@ -272,7 +272,14 @@ SmallGPTalkProviderTest >> testAccountModelCatalog [
 SmallGPTalkProviderTest >> testReasoningEffortIsSent [
 	self assert: ((provider requestBodyFor: session) at: 'reasoning')
 		equals: (Dictionary new at: 'effort' put: 'medium'; yourself).
-	provider reasoningEffort: 'high'.
+	session reasoningEffort: 'high'.
 	self assert: (((provider requestBodyFor: session) at: 'reasoning') at: 'effort') equals: 'high'.
-	self should: [ provider reasoningEffort: 'invalid' ] raise: Error
+	session reasoningEffort: 'invalid'.
+	self should: [ provider requestBodyFor: session ] raise: Error
+]
+
+{ #category : 'running' }
+SmallGPTalkProviderTest >> tearDown [
+	[ session activeRun ifNotNil: [ :run | run cancel; wait ] ]
+		ensure: [ super tearDown ]
 ]

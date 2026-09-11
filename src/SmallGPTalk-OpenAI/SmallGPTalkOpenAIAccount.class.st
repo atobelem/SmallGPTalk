@@ -1,3 +1,4 @@
+"Coordinate account login, credential renewal, and sign-out through a credential store."
 Class {
 	#name : #SmallGPTalkOpenAIAccount,
 	#superclass : #Object,

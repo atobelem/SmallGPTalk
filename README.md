@@ -13,7 +13,7 @@ Documentation, comments, and interface text use simplified English under ASD-STE
 The source contains the agent loop, image tools, OpenAI account login, and a native macOS Keychain store.
 Login uses the ChatGPT account flow. It does not require an API key.
 Version 1 passed its completion checks on 2026-09-09.
-All 157 offline tests passed in a clean Pharo image.
+All 231 offline tests passed in a clean Pharo image.
 Native login and Keychain recovery in a new process passed.
 Model `gpt-5.6-luna` inspected a fixture, repaired its method, and ran its SUnit test.
 Independent assertions, conversation continuation, token renewal, and sign-out also passed.
@@ -83,6 +83,18 @@ Zinc, STON, Opal, SUnit, and threaded FFI come from the selected Pharo image.
 
 ## Use the chat window
 
+The chat uses bold speaker names and separate activity notices.
+The conversation scrolls to the latest text when new content arrives.
+While text is selected, the view keeps the selection and scroll position.
+The model continues to run. Clear the selection to show pending text and resume scrolling.
+Assistant replies display fenced code blocks, inline code, and bold text.
+Code uses a fixed-width font. This is a small Markdown subset.
+Longer backtick delimiters can contain shorter literal backtick sequences.
+The display does not change the source sent to the model.
+Successful evaluations show a short notice in the conversation.
+Select an evaluation in the side panel to read its result or inspect its object.
+Errors stay visible in the conversation.
+
 Run `bash scripts/chat.sh` on macOS to open a new development image.
 The script loads the optional `Chat` group into a separate image copy.
 It does not replace your open image.
@@ -96,12 +108,16 @@ It does not replace your open image.
 After connection, the chat selects `gpt-5.6-luna` and effort `medium`.
 The effort list contains only values from the selected model's account catalog.
 If the default model or effort is unavailable, select an available value.
-Use `provider reasoningEffort:` to set the effort through the API.
+Use `session reasoningEffort:` to set the effort through the API.
 
 The window shows response text and tool results as they arrive.
 Use **Stop** to cancel a run or browser login.
 Keychain operations and model catalog requests must finish before the window becomes ready.
-Use **New chat** to clear the conversation and change the model or effort.
+Use **New chat** to open another window without clearing the current conversation.
+The new window copies the model and effort choices. You can change them before sending.
+Each window has its own conversation. All windows use the same Pharo image and Keychain login.
+Only one run with image tools can execute at a time.
+Signing out removes the shared login for all windows.
 Use **Sign out** to remove the local credential record.
 Closing the window cancels an active run or login. It does not sign out.
 Conversations stay in memory. Image changes remain after cancellation.
@@ -109,6 +125,51 @@ Conversations stay in memory. Image changes remain after cancellation.
 In an image with the `Chat` group loaded, evaluate `SmallGPTalkChat new open`.
 The default API load does not include the chat package.
 The chat tests use a test provider. They do not access an account or Keychain.
+
+## Use Pharo code context and objects
+
+In the Calypso browser, open the context menu on a class or method.
+Select **Ask SmallGPTalk**. A new chat contains the selected definition or method source.
+Add your question to the prepared message. Connect and press **Send** when ready.
+The context remains visible and editable. Opening the chat does not send code to OpenAI.
+If several methods are selected, the action uses the first method.
+
+You can also evaluate:
+
+```smalltalk
+SmallGPTalkChat askAbout: SmallGPTalkSession.
+SmallGPTalkChat askAbout: SmallGPTalkSession >> #send:onEvent:.
+```
+
+The chat places conversation and message input on the left.
+The right panel contains evaluations, expression previews, and object actions.
+Model and effort controls share a compact row above both panels.
+
+The **Evaluations** list keeps the last 100 successful evaluations in each chat.
+Select an expression and press **Inspect evaluation** to open the complete evaluation.
+It contains the expression, bounded output, value, and execution context.
+Use **Browse result** to browse a returned class or method, or the class of another object.
+Use **Copy expression** to copy the Smalltalk source for use in Playground.
+These actions do not execute the expression again.
+The objects are live references. Later image changes can change their state.
+Each conversation entry keeps its object until the chat closes.
+The side list shows the last 100 successful evaluations. Earlier results remain in the conversation view.
+Closing the chat releases the view entries and result list. Open inspectors can still hold these objects.
+
+Select a message or notice, then open the context menu with a right-click.
+Use **Inspect object** to inspect its message, tool call, result, or failure.
+During a response, the message is a display draft. A complete response uses the message stored by the session.
+Use **Inspect value** in the evaluation context menu to inspect only the returned value.
+Use **Open expression in Playground** to edit its source without running it.
+Select text and use **Open selection in Playground** to edit a code example.
+Select a class name or a reference such as `SmallGPTalkSession >> messages` and use **Browse selection**.
+The same menu can inspect the conversation, session, agent, and current run.
+
+The model receives only the bounded text result. Local evaluation results expose
+`value`, `expression`, and `context` through `SmallGPTalkEvaluationResult`.
+The context records the model, effort, active messages, run, and tool call.
+Message and value references remain live objects. The context collection is a snapshot.
+The chat package supplies the browser commands. The default API load does not add them.
 
 ## Use the Smalltalk API
 
@@ -182,10 +243,42 @@ Completed conversation entries remain after a failure.
 Custom tools subclass `SmallGPTalkTool`.
 Implement `name`, `description`, `inputSchema`, and `execute:context:`.
 The execution method receives an argument dictionary and the active run.
-Return a `SmallGPTalkToolResult`. Set `requiresImage` to true for access to image state.
+Return a `SmallGPTalkToolResult`.
+Implement `newForSession` to create a tool with the same configuration and fresh mutable state.
+`executionResources` returns the resources that a run must reserve.
+Each resource implements `reserveFor:` and `releaseFor:`.
+Image tools use `SmallGPTalkImageAccess` from the Pharo package.
 The base class checks required fields, types, allowed values, and extra properties in the input schema.
 Providers implement `respondTo:onText:run:` and return a complete `SmallGPTalkMessage` with the assistant role.
 The text block receives text fragments. It does not commit conversation entries.
+
+## Agent and session
+
+`SmallGPTalkAgent` holds a name, instructions, and tool prototypes.
+`agent newSession` starts an independent conversation configuration.
+The new session keeps a reference to its agent and copies its instructions and tools.
+Tools create their session instances through `newForSession`.
+The agent stores configured prototypes; `agent tools` returns a copy of their collection.
+Later changes to the agent apply to new sessions only.
+The agent name is a local label. Use instructions to define the model's role.
+
+```smalltalk
+agent := SmallGPTalkAgent new
+    tools: SmallGPTalkImageTools all;
+    yourself.
+session := agent newSession
+    provider: provider;
+    model: 'gpt-5.6-luna';
+    reasoningEffort: 'medium';
+    yourself.
+```
+
+Each session owns its messages, model, reasoning effort, and execution limits.
+`SmallGPTalkRun` still owns the execution loop.
+New chat windows share the agent definition and create separate sessions.
+The core agent has no tools by default. The chat configures it with evaluate.
+Existing `session instructions:` and `session tools:` calls override that session only.
+Set `session agent:` before the conversation starts.
 
 ## Agent identity
 
@@ -193,7 +286,7 @@ The default instructions identify the agent as SmallGPTalk, a Smalltalk assistan
 The agent uses the user's language and gives short answers.
 It uses the supplied tools, inspects code before changes, and reports validation limits.
 The chat always supplies evaluate. API callers select their own tool collection.
-Inspect `SmallGPTalkSession defaultInstructions` to read the complete text.
+Inspect `SmallGPTalkAgent defaultInstructions` to read the complete text.
 Use `session instructions:` to replace it before a run.
 An existing session keeps its current instructions.
 
@@ -206,8 +299,8 @@ The API also accepts an empty collection or caller-defined tools.
 `evaluate` accepts Smalltalk in `source`. It returns the result class and bounded text.
 Use Smalltalk reflection to search and read code. Use the compiler to change methods.
 Use SUnit to run tests. All operations act on the image that runs SmallGPTalk.
-The earlier search, read, compile, and test classes remain in source for comparison.
-They are not in the default tool collection or the chat.
+The separate search, read, compile, and test tools have been removed.
+Their previous implementations remain in Git history.
 
 | Limit | Default | Configuration |
 | --- | --- | --- |
@@ -238,8 +331,112 @@ The HTTPS client checks the server certificate chain and host name before it sen
 This version does not support HTTP proxies.
 See [the connection record](docs/PROTOCOL.md) for endpoints and reference versions.
 
-A **conversation** is the ordered collection of messages and tool results.
+A **conversation** owns the ordered messages and relates tool calls to their results.
 A **provider** converts these objects to model requests and complete responses.
 A **tool** is an operation that the model can request.
 A **run** executes the agent loop for one user message.
 See [AGENTS.md](AGENTS.md) for development rules.
+
+## Responsibility boundaries
+
+SmallGPTalkChatConnection coordinates login, catalog access, cancellation, and sign-out.
+It reports events. The chat presents those events and opens the authorization URL.
+The core run reserves tool resources without knowing about Pharo image locks.
+SmallGPTalkImageAccess owns the shared image lock.
+The session stores reasoning effort as a string. The OpenAI provider validates its values.
+
+`session conversation` returns a `SmallGPTalkConversation`.
+Its `messages` method returns a collection copy with the original message objects.
+Use `messageWithCallId:` and `resultWithCallId:` to follow a tool call.
+`SmallGPTalkConversationPresenter` owns display entries, text selection, menus, and scrolling.
+`SmallGPTalkChatEntry` associates each displayed range with its source object.
+Display drafts and local values do not enter provider requests.
+
+`scripts/check-chat-objects.st` is a separate native UI check for a loaded test image.
+It uses a test provider and opens the Inspector, Browser, and Playground.
+It does not access OpenAI or Keychain. It exits the test image when complete.
+
+Tool call identifiers must be unique in the conversation.
+A repeated identifier fails the run before the response is committed or its tools execute.
+Resource cleanup attempts each release even if another release fails.
+A cleanup failure fails the run, clears the active session run, and emits the terminal event.
+`run cleanupErrors` contains the cleanup diagnostics. An earlier run error remains the primary error.
+
+See [the native Pharo review](docs/PHARO-REVIEW.md) for critic results and remaining observations.
+
+## Continuous self-improvement
+
+Connect and select a model and reasoning effort. Press **Improve SmallGPTalk**.
+A separate chat starts autonomous improvement cycles with the same model and effort.
+Each cycle inspects SmallGPTalk, chooses a small change, modifies code, and runs relevant tests.
+It does not request approval between these steps.
+The controller starts another cycle after each completed or failed cycle.
+Press **Stop**, or close that improvement chat, to cancel it.
+Stop also interrupts the pause between cycles. Completed image changes remain.
+The controller does not resume automatically after a Pharo process restart.
+
+Each cycle uses a new session with the normal turn limit and a summary of at most 2,000 characters.
+The default pause is one second after success and 30 seconds after an error.
+A failed cycle does not replay an old request. The next cycle must inspect the current image.
+The chat keeps display entries and local result objects in memory until it closes.
+Long runs use more memory and consume model usage while active.
+Changes apply to the running image. Repository files are not updated by this mode.
+The instructions require relevant SUnit checks; they do not guarantee that every model change is correct.
+Tests that require a second image run cannot use the image lock held by the active run.
+
+The API controller is `SmallGPTalkSelfImprovement`.
+Set `sessionFactory:` to a block that returns a new configured session on each call.
+Use `startOnEvent:`, `cancel`, `wait`, `state`, `cycleCount`, and `activeRun` to control it.
+`agent forSelfImprovement` creates a separate agent definition with improvement instructions.
+See [the continuous improvement example](examples/self-improvement.st).
+
+## Context and compaction
+
+The complete conversation stays in `session messages`.
+`session context messages` returns the messages that the model currently uses.
+Compaction asks the selected model for a continuation summary. It replaces the
+older model context with that summary and keeps the original conversation and
+chat entries. The summary can omit details; the original objects remain available.
+
+Enter `/compact` in the chat to compact the current context. This command does not
+become a user message in the model conversation. It uses one model turn and no
+tools. Stop cancels the request. A failed or cancelled summary request leaves the
+previous context in place. A complete summary committed before Stop remains.
+
+Automatic compaction is enabled at a default limit of 60,000 characters.
+Before a model turn, it summarizes older turns when the context reaches that
+limit. It keeps the current user request and all its tool calls and results together.
+If there are no older messages to summarize, it continues with the current turn.
+The percentage can exceed 100 percent in that case. Summary requests also count
+against the run turn limit. They do not execute or replay image operations.
+
+The UI shows the percentage of this character limit. This is not the model's
+exact token usage or maximum token window. The character count includes active
+text, tool definitions, arguments, and preserved provider items. Provider items
+replace the text count when they already contain that text.
+
+Press **Inspect context** to inspect a snapshot with the model, effort, instructions,
+tools, active messages, summary, and limit. For OpenAI, `request` contains the
+request body built from the current context. It excludes authorization headers.
+This is the context at inspection time, not a record of the last HTTP request.
+The conversation context menu can also inspect the context object itself.
+
+```smalltalk
+session context inspect.
+session context snapshot inspect.
+session context autoCompactLimit: 60000.
+session context autoCompactLimit: nil. "Disable automatic compaction."
+run := session compactOnEvent: [ :event | ].
+run wait.
+```
+
+Compaction emits `#compactionStarted` and `#compacted` events. The normal run
+terminal event still reports completion, failure, or cancellation.
+`scripts/check-context-chat.st` checks both compaction modes, retained history,
+usage percentage, and inspection with a test provider. It exits the test image.
+The context features passed offline and native UI checks. On 2026-09-10,
+`scripts/live-compaction.st` passed manual compaction, continuation, and automatic
+compaction with `gpt-5.6-luna` at `medium` effort. An independent assertion checked
+that a completed image mutation occurred only once. The script uses the saved
+account login in a disposable image. It removes its fixture and does not sign out.
+See [the context review](docs/CONTEXT-REVIEW.md) for scope and limits.

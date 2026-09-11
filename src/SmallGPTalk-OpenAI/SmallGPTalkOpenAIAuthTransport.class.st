@@ -1,3 +1,4 @@
+"Send OAuth form requests and decode their responses."
 Class {
 	#name : #SmallGPTalkOpenAIAuthTransport,
 	#superclass : #Object,

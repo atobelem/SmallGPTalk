@@ -1,3 +1,4 @@
+"Keep the identifier, name, and arguments of a requested tool operation."
 Class {
 	#name : #SmallGPTalkToolCall,
 	#superclass : #Object,

@@ -5,10 +5,13 @@ provider := SmallGPTalkOpenAIProvider account: account.
 provider models.
 
 "Select a model from the account catalog. This model passed the release check."
-session := SmallGPTalkSession new
+agent := SmallGPTalkAgent new
+	tools: SmallGPTalkImageTools all;
+	yourself.
+session := agent newSession
 	provider: provider;
 	model: 'gpt-5.6-luna';
-	tools: SmallGPTalkImageTools all;
+	reasoningEffort: 'medium';
 	yourself.
 
 run := session

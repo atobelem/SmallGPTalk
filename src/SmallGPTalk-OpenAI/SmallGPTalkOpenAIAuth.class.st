@@ -1,3 +1,4 @@
+"Define OAuth client settings and credential conversion for OpenAI account login."
 Class {
 	#name : #SmallGPTalkOpenAIAuth,
 	#superclass : #Object,

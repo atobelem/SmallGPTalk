@@ -1,10 +1,11 @@
+"Receive the local OAuth callback without taking over an occupied port."
 Class {
 	#name : #SmallGPTalkOpenAIAuthServer,
 	#superclass : #ZnSingleThreadedServer,
 	#category : #'SmallGPTalk-OpenAI'
 }
 
-{ #category : #running }
+{ #category : 'public' }
 SmallGPTalkOpenAIAuthServer >> start [
 	self isRunning ifTrue: [ self error: 'The callback server is active.' ].
 	self loggingOff.
@@ -18,7 +19,7 @@ SmallGPTalkOpenAIAuthServer >> start [
 		forkAt: Processor highIOPriority named: 'SmallGPTalk login callback'
 ]
 
-{ #category : #running }
+{ #category : 'private' }
 SmallGPTalkOpenAIAuthServer >> closeDelegate [
 	"The login operation owns this server."
 	^ self

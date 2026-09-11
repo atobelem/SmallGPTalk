@@ -1,3 +1,4 @@
+"Store test credentials in memory. No Keychain access occurs."
 Class {
 	#name : #SmallGPTalkAuthMemoryStore,
 	#superclass : #Object,

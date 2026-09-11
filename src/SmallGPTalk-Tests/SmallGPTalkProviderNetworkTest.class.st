@@ -13,7 +13,7 @@ SmallGPTalkProviderNetworkTest >> setUp [
 	finished := Semaphore new.
 	textReceived := Semaphore new.
 	deltas := OrderedCollection new.
-	server := ZnSingleThreadedServer on: 0.
+	server := SmallGPTalkProviderNetworkServer on: 0.
 	server bindingAddress: #(127 0 0 1) asByteArray; loggingOff.
 	server start.
 	client := SmallGPTalkProviderNetworkClient new localUrl: server localUrl; yourself.
@@ -28,7 +28,7 @@ SmallGPTalkProviderNetworkTest >> setUp [
 
 { #category : #'running' }
 SmallGPTalkProviderNetworkTest >> tearDown [
-	run ifNotNil: [ run cancel ].
+	run ifNotNil: [ run cancel; wait ].
 	release ifNotNil: [ release signal ].
 	client ifNotNil: [ client close ].
 	server ifNotNil: [ server stop ].
@@ -124,4 +124,18 @@ SmallGPTalkProviderNetworkTest >> testTimeoutClosesAStalledSocket [
 	self assert: client closedConnection.
 	self deny: client isConnected.
 	self deny: (client request headers includesKey: 'Authorization')
+]
+
+{ #category : 'tests' }
+SmallGPTalkProviderNetworkTest >> testServerHandlesClientDisconnect [
+	self serve: self textEvent stalled: true.
+	self startRun.
+	self deny: (textReceived waitTimeoutMilliseconds: 2000).
+	run cancel.
+	self assertFinished.
+	release signal.
+	self deny: (server waitForDisconnectMilliseconds: 2000).
+	self assert: server disconnectCount > 0.
+	self assert: server isRunning.
+	self assert: run state equals: #cancelled
 ]

@@ -56,129 +56,6 @@ SmallGPTalkImageToolsTest >> jsonFrom: result [
 	^ STONJSON fromString: result text
 ]
 
-{ #category : 'private' }
-SmallGPTalkImageToolsTest >> assertTestCounts: summary [
-	self assert: (summary at: 'run') equals: 4.
-	self assert: (summary at: 'passed') equals: 1.
-	self assert: (summary at: 'failures') equals: 1.
-	self assert: (summary at: 'errors') equals: 1.
-	self assert: (summary at: 'skipped') equals: 1.
-	#('testFailure' 'testError' 'testSkip') do: [ :selector |
-		self assert: ((summary at: 'details') anySatisfy: [ :detail |
-			(detail at: 'class') = fixtureTestClass name and: [
-				(detail at: 'selector') = selector ] ]) ]
-]
-
-{ #category : 'tests - search' }
-SmallGPTalkImageToolsTest >> testFindsPackagesClassesAndSelectors [
-	{
-		{ 'packages'. self fixturePackageName }.
-		{ 'classes'. fixtureClass name }.
-		{ 'selectors'. 'smallGPTalkFixtureValue' }
-	} do: [ :selection |
-		| result |
-		result := self execute: SmallGPTalkSearchTool new arguments: (Dictionary new
-			at: 'kind' put: selection first;
-			at: 'query' put: selection second;
-			yourself).
-		self deny: result isError.
-		self assert: (result text includesSubstring: selection second) ]
-]
-
-{ #category : 'tests - search' }
-SmallGPTalkImageToolsTest >> testRejectsInvalidSearchLimits [
-	#(0 501) do: [ :limit |
-		self should: [
-			self execute: SmallGPTalkSearchTool new arguments: (Dictionary new
-				at: 'query' put: 'SmallGPTalk';
-				at: 'limit' put: limit;
-				yourself)
-		] raise: Error ]
-]
-
-{ #category : 'tests - read' }
-SmallGPTalkImageToolsTest >> testReadsClassDefinitionAndComment [
-	| summary |
-	summary := self jsonFrom: (self execute: SmallGPTalkReadTool new arguments: (Dictionary new
-		at: 'class' put: fixtureClass name;
-		yourself)).
-	self assert: (summary at: 'class') equals: fixtureClass name.
-	self assert: ((summary at: 'definition') includesSubstring: fixtureClass name).
-	self assert: (summary at: 'comment') equals: fixtureClass comment
-]
-
-{ #category : 'tests - read' }
-SmallGPTalkImageToolsTest >> testReadsInstanceAndClassMethods [
-	#('instance' 'class') with: #('7' '11') do: [ :side :value |
-		| summary |
-		summary := self jsonFrom: (self execute: SmallGPTalkReadTool new arguments: (Dictionary new
-			at: 'class' put: fixtureClass name;
-			at: 'selector' put: 'smallGPTalkFixtureValue';
-			at: 'side' put: side;
-			yourself)).
-		self assert: (summary at: 'side') equals: side.
-		self assert: (summary at: 'selector') equals: 'smallGPTalkFixtureValue'.
-		self assert: (summary at: 'protocol') equals: 'accessing'.
-		self assert: ((summary at: 'source') includesSubstring: '^ ' , value) ]
-]
-
-{ #category : 'tests - read' }
-SmallGPTalkImageToolsTest >> testRejectsMissingClassAndMethod [
-	self should: [
-		self execute: SmallGPTalkReadTool new arguments: (Dictionary new
-			at: 'class' put: 'SmallGPTalkImageFixtureDoesNotExist';
-			yourself)
-	] raise: Error.
-	self should: [
-		self execute: SmallGPTalkReadTool new arguments: (Dictionary new
-			at: 'class' put: fixtureClass name;
-			at: 'selector' put: 'smallGPTalkMissingMethod';
-			yourself)
-	] raise: Error
-]
-
-{ #category : 'tests - compile' }
-SmallGPTalkImageToolsTest >> testReplacesInstanceMethod [
-	| summary |
-	summary := self jsonFrom: (self execute: SmallGPTalkCompileTool new arguments: (Dictionary new
-		at: 'class' put: fixtureClass name;
-		at: 'source' put: 'smallGPTalkFixtureValue ^ 23';
-		at: 'protocol' put: 'fixture changes';
-		yourself)).
-	self assert: (summary at: 'selector') equals: 'smallGPTalkFixtureValue'.
-	self assert: (summary at: 'side') equals: 'instance'.
-	self assert: (summary at: 'protocol') equals: 'fixture changes'.
-	self assert: (fixtureClass new perform: #smallGPTalkFixtureValue) equals: 23.
-	self assert: (fixtureClass perform: #smallGPTalkFixtureValue) equals: 11
-]
-
-{ #category : 'tests - compile' }
-SmallGPTalkImageToolsTest >> testAddsClassMethod [
-	| summary |
-	summary := self jsonFrom: (self execute: SmallGPTalkCompileTool new arguments: (Dictionary new
-		at: 'class' put: fixtureClass name;
-		at: 'side' put: 'class';
-		at: 'source' put: 'smallGPTalkAddedValue ^ 31';
-		at: 'protocol' put: 'fixture changes';
-		yourself)).
-	self assert: (summary at: 'selector') equals: 'smallGPTalkAddedValue'.
-	self assert: (summary at: 'side') equals: 'class'.
-	self assert: (fixtureClass perform: #smallGPTalkAddedValue) equals: 31.
-	self deny: (fixtureClass includesSelector: #smallGPTalkAddedValue)
-]
-
-{ #category : 'tests - compile' }
-SmallGPTalkImageToolsTest >> testCompileFailurePreservesExistingMethod [
-	self should: [
-		self execute: SmallGPTalkCompileTool new arguments: (Dictionary new
-			at: 'class' put: fixtureClass name;
-			at: 'source' put: 'smallGPTalkFixtureValue ^ [ ] ]';
-			at: 'protocol' put: 'fixture changes';
-			yourself)
-	] raise: Error.
-	self assert: (fixtureClass new perform: #smallGPTalkFixtureValue) equals: 7
-]
-
 { #category : 'tests - evaluate' }
 SmallGPTalkImageToolsTest >> testEvaluatesExpressionInCurrentImage [
 	| summary |
@@ -251,43 +128,68 @@ SmallGPTalkImageToolsTest >> testBoundsToolOutput [
 	self assert: result text size <= 100
 ]
 
-{ #category : 'tests - test' }
-SmallGPTalkImageToolsTest >> testRunsSelectedTestClasses [
-	| summary |
-	summary := self jsonFrom: (self execute: SmallGPTalkTestTool new arguments: (Dictionary new
-		at: 'classes' put: { fixtureTestClass name };
-		yourself)).
-	self assertTestCounts: summary
+{ #category : 'tests' }
+SmallGPTalkImageToolsTest >> testEvaluationRetainsLocalObjectOutsideJSON [
+	| result decoded |
+	result := self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new
+		at: 'source' put: fixtureClass name asString; yourself).
+	self assert: result value identicalTo: fixtureClass.
+	self assert: result expression equals: fixtureClass name asString.
+	decoded := STONJSON fromString: result text.
+	self assert: decoded size equals: 3.
+	self deny: (decoded includesKey: 'localValue').
+	self deny: (decoded includesKey: 'localExpression')
 ]
 
-{ #category : 'tests - test' }
-SmallGPTalkImageToolsTest >> testRunsTestsInSelectedPackage [
-	| summary |
-	summary := self jsonFrom: (self execute: SmallGPTalkTestTool new arguments: (Dictionary new
-		at: 'package' put: self fixturePackageName;
-		yourself)).
-	self assertTestCounts: summary
+{ #category : 'tests' }
+SmallGPTalkImageToolsTest >> testNilIsAnInspectableEvaluationResult [
+	| result |
+	result := self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new at: 'source' put: 'nil'; yourself).
+	self assert: (result isKindOf: SmallGPTalkEvaluationResult).
+	self assert: result value isNil
 ]
 
-{ #category : 'tests - test' }
-SmallGPTalkImageToolsTest >> testRejectsEmptyAndAmbiguousTestSelections [
-	{
-		Dictionary new.
-		(Dictionary new at: 'classes' put: #(); yourself).
-		(Dictionary new at: 'package' put: ''; yourself).
-		(Dictionary new
-			at: 'package' put: self fixturePackageName;
-			at: 'classes' put: { fixtureTestClass name };
-			yourself)
-	} do: [ :arguments |
-		self should: [ self execute: SmallGPTalkTestTool new arguments: arguments ] raise: Error ]
+{ #category : 'tests - evaluate' }
+SmallGPTalkImageToolsTest >> testReadsAndCompilesThroughEvaluate [
+	| result |
+	result := self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new
+		at: 'source' put: '(' , fixtureClass name , ' >> #smallGPTalkFixtureValue) sourceCode'; yourself).
+	self assert: (result value includesSubstring: '^ 7').
+	self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new
+		at: 'source' put: fixtureClass name , ' compile: ''smallGPTalkFixtureValue ^ 23'' classified: ''accessing'''; yourself).
+	self assert: (fixtureClass new perform: #smallGPTalkFixtureValue) equals: 23
 ]
 
-{ #category : 'tests - test' }
-SmallGPTalkImageToolsTest >> testRejectsAClassThatIsNotATestCase [
-	self should: [
-		self execute: SmallGPTalkTestTool new arguments: (Dictionary new
-			at: 'classes' put: { fixtureClass name };
-			yourself)
-	] raise: Error
+{ #category : 'tests - evaluate' }
+SmallGPTalkImageToolsTest >> testCompileErrorThroughEvaluatePreservesMethod [
+	self should: [ self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new
+		at: 'source' put: fixtureClass name , ' compile: ''smallGPTalkFixtureValue ^ [ ] ]'' classified: ''accessing'''; yourself) ] raise: Error.
+	self assert: (fixtureClass new perform: #smallGPTalkFixtureValue) equals: 7
+]
+
+{ #category : 'tests - evaluate' }
+SmallGPTalkImageToolsTest >> testRunsSUnitThroughEvaluate [
+	| result |
+	result := self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new
+		at: 'source' put: '| result | TestExecutionEnvironment new beActiveDuring: [ result := ', fixtureTestClass name, ' suite run ]. result'; yourself).
+	self assert: result value runCount equals: 3.
+	self assert: result value skipped size equals: 1.
+	self assert: result value failures size equals: 1.
+	self assert: result value errors size equals: 1
+]
+
+{ #category : 'tests' }
+SmallGPTalkImageToolsTest >> testEvaluationKeepsItsExecutionContext [
+	| session result |
+	session := SmallGPTalkSession new model: 'fixture-model'; reasoningEffort: 'high'; yourself.
+	session addMessage: (SmallGPTalkMessage user: 'Evaluate the fixture.').
+	run session: session.
+	result := self execute: SmallGPTalkEvaluateTool new arguments: (Dictionary new at: 'source' put: '6 * 7'; yourself).
+	self assert: result expression equals: '6 * 7'.
+	self assert: result value equals: 42.
+	self assert: (result context at: #model) equals: 'fixture-model'.
+	self assert: (result context at: #reasoningEffort) equals: 'high'.
+	self assert: (result context at: #run) identicalTo: run.
+	self assert: (result context at: #messages) first identicalTo: session messages first.
+	self assert: ((STONJSON fromString: result text) at: 'value') equals: '42'
 ]

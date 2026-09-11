@@ -1,3 +1,4 @@
+"Obtain cryptographic random bytes for OAuth state and PKCE."
 Class {
 	#name : 'SmallGPTalkSecureRandom',
 	#superclass : 'Object',

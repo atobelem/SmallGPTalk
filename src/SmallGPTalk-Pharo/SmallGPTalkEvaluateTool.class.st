@@ -1,3 +1,4 @@
+"Evaluate Smalltalk in the current image and keep the local result object."
 Class {
 	#name : 'SmallGPTalkEvaluateTool',
 	#superclass : 'SmallGPTalkImageTool',
@@ -33,8 +34,25 @@ SmallGPTalkEvaluateTool >> performTool: arguments context: aRun [
 	truncated := representation size > limit.
 	truncated ifTrue: [ representation := (representation first: limit - 4) , '[..]' ].
 	^ Dictionary new
+		at: #localValue put: value;
+		at: #localExpression put: (arguments at: 'source');
 		at: 'class' put: value class name asString;
 		at: 'value' put: representation;
 		at: 'truncated' put: truncated;
+		yourself
+]
+
+{ #category : 'private' }
+SmallGPTalkEvaluateTool >> resultFor: evaluation context: aRun [
+	| value expression textResult |
+	value := evaluation removeKey: #localValue.
+	expression := evaluation removeKey: #localExpression.
+	textResult := super resultFor: evaluation context: aRun.
+	^ SmallGPTalkEvaluationResult new
+		value: value;
+		context: aRun contextSnapshot;
+		expression: expression;
+		text: textResult text;
+		truncated: textResult truncated;
 		yourself
 ]

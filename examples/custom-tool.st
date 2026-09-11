@@ -6,6 +6,7 @@ clockToolClass := Smalltalk classInstaller make: [ :builder |
 		name: #SmallGPTalkExampleClockTool;
 		superclass: SmallGPTalkTool;
 		package: 'SmallGPTalk-Examples' ].
+clockToolClass compile: 'newForSession ^ self class new' classified: 'sessions'.
 clockToolClass compile: 'name ^ ''clock''' classified: 'accessing'.
 clockToolClass compile: 'description ^ ''Return the current local date and time.''' classified: 'accessing'.
 clockToolClass compile: 'inputSchema

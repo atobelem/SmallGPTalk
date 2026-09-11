@@ -1,3 +1,4 @@
+"Track one cancellable browser login operation through callback and token exchange."
 Class {
 	#name : #SmallGPTalkOpenAILogin,
 	#superclass : #Object,
@@ -36,7 +37,7 @@ SmallGPTalkOpenAILogin >> state [
 	^ state
 ]
 
-{ #category : #accessing }
+{ #category : 'error handling' }
 SmallGPTalkOpenAILogin >> error [
 	^ error
 ]

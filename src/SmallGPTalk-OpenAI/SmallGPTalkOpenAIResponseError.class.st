@@ -1,3 +1,4 @@
+"Report an HTTP response failure with its status code."
 Class {
 	#name : #SmallGPTalkOpenAIResponseError,
 	#superclass : #Error,

@@ -1,3 +1,4 @@
+"Supply controlled OAuth responses and synchronization points for tests."
 Class {
 	#name : #SmallGPTalkAuthTestTransport,
 	#superclass : #Object,

@@ -1,3 +1,4 @@
+"Create the default collection of image tools for a session."
 Class {
 	#name : 'SmallGPTalkImageTools',
 	#superclass : 'Object',

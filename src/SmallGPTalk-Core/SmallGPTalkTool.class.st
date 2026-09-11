@@ -1,3 +1,4 @@
+"Define the tool protocol and validate arguments against the supplied schema."
 Class {
 	#name : 'SmallGPTalkTool',
 	#superclass : 'Object',
@@ -23,11 +24,6 @@ SmallGPTalkTool >> inputSchema [
 { #category : 'accessing' }
 SmallGPTalkTool >> name [
 	self subclassResponsibility
-]
-
-{ #category : 'testing' }
-SmallGPTalkTool >> requiresImage [
-	^ false
 ]
 
 { #category : 'validation' }
@@ -99,4 +95,15 @@ SmallGPTalkTool >> value: value hasType: type [
 	type = 'boolean' ifTrue: [ ^ value == true or: [ value == false ] ].
 	type = 'null' ifTrue: [ ^ value isNil ].
 	self error: 'Unknown schema type: ' , type , '.'
+]
+
+{ #category : 'sessions' }
+SmallGPTalkTool >> newForSession [
+	"Return a fresh tool with this configuration and independent mutable state."
+	self subclassResponsibility
+]
+
+{ #category : 'execution resources' }
+SmallGPTalkTool >> executionResources [
+	^ #()
 ]

@@ -1,3 +1,4 @@
+"Supply certificate verification results for offline TLS tests."
 Class {
 	#name : 'SmallGPTalkKeychainTLSSessionStub',
 	#superclass : 'Object',

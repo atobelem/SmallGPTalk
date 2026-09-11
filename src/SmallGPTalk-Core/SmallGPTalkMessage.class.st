@@ -1,3 +1,4 @@
+"Represent a user message, complete assistant response, or tool result."
 Class {
 	#name : #SmallGPTalkMessage,
 	#superclass : #Object,

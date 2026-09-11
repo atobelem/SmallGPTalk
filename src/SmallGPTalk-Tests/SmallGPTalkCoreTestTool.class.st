@@ -1,7 +1,8 @@
+"Execute a supplied test block and expose configurable resource requirements."
 Class {
 	#name : #SmallGPTalkCoreTestTool,
 	#superclass : #SmallGPTalkTool,
-	#instVars : [ 'action', 'executionCount', 'imageTool' ],
+	#instVars : [ 'action', 'executionCount', 'imageTool', 'resources' ],
 	#category : #'SmallGPTalk-Tests'
 }
 
@@ -48,13 +49,24 @@ SmallGPTalkCoreTestTool >> imageTool: aBoolean [
 	imageTool := aBoolean
 ]
 
-{ #category : #'accessing' }
-SmallGPTalkCoreTestTool >> requiresImage [
-	^ imageTool
+{ #category : 'execution resources' }
+SmallGPTalkCoreTestTool >> executionResources [
+	resources ifNotNil: [ ^ resources ].
+	^ imageTool ifTrue: [ { SmallGPTalkImageAccess } ] ifFalse: [ #() ]
 ]
 
-{ #category : #'running' }
+{ #category : 'executing' }
 SmallGPTalkCoreTestTool >> execute: arguments context: aRun [
 	executionCount := executionCount + 1.
 	^ action value: arguments value: aRun
+]
+
+{ #category : 'sessions' }
+SmallGPTalkCoreTestTool >> newForSession [
+	^ self class new action: action; imageTool: imageTool; executionResources: self executionResources; yourself
+]
+
+{ #category : 'accessing' }
+SmallGPTalkCoreTestTool >> executionResources: aCollection [
+	resources := aCollection copy
 ]

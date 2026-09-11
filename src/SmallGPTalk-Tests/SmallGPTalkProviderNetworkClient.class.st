@@ -1,3 +1,4 @@
+"Simulate network operations and connection cleanup in provider tests."
 Class {
 	#name : #SmallGPTalkProviderNetworkClient,
 	#superclass : #ZnClient,
@@ -10,7 +11,7 @@ SmallGPTalkProviderNetworkClient >> localUrl: aUrl [
 	localUrl := aUrl
 ]
 
-{ #category : #'accessing' }
+{ #category : 'accessing - request' }
 SmallGPTalkProviderNetworkClient >> url: aUrl [
 	^ super url: localUrl
 ]
@@ -20,7 +21,7 @@ SmallGPTalkProviderNetworkClient >> closedConnection [
 	^ closedConnection = true
 ]
 
-{ #category : #'operations' }
+{ #category : 'cleanup' }
 SmallGPTalkProviderNetworkClient >> close [
 	| hadConnection |
 	hadConnection := self isConnected.

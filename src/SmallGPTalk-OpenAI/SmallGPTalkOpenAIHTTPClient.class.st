@@ -1,3 +1,4 @@
+"Require HTTPS and verify the server certificate before sending credentials."
 Class {
 	#name : 'SmallGPTalkOpenAIHTTPClient',
 	#superclass : 'ZnClient',
@@ -32,12 +33,12 @@ SmallGPTalkOpenAIHTTPClient >> requireHTTPS: url [
 ]
 
 { #category : 'private' }
-SmallGPTalkOpenAIHTTPClient >> validateTLS: session for: url [
+SmallGPTalkOpenAIHTTPClient >> validateTLS: tlsSession for: url [
 	| peer |
 	self requireHTTPS: url.
-	session certificateVerificationState = 0 ifFalse: [
+	tlsSession certificateVerificationState = 0 ifFalse: [
 		self error: 'The server certificate is not trusted.' ].
-	peer := session peerCertificateName.
+	peer := tlsSession peerCertificateName.
 	(peer isString and: [ peer asLowercase = url host asLowercase ]) ifFalse: [
 		self error: 'The server certificate does not match the host.' ].
 	trustedHost := url host asLowercase
