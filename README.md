@@ -268,11 +268,14 @@ compaction with a small fixture; token decisions have separate offline tests.
 
 ## Continuous improvement
 
-The chat launcher supplies an optional improvement controller. Opening the chat
-leaves it idle. Press Start improvement to begin, Stop improvement to stop, and
-Inspect improvement to inspect its cycles. Cancel in the chat cancels only the
-current model run; it does not stop the controller. Closing a view also leaves
-the controller running.
+Continuous improvement is hidden in the standard chat. The launcher does not
+create a controller or show its controls. The implementation remains available
+through the Smalltalk API and an explicitly supplied controller.
+
+If you explicitly add the controls, Start improvement begins execution, Stop
+improvement stops it, and Inspect improvement opens its cycles. Cancel in the
+chat cancels only the current model run; it does not stop the controller.
+Closing a view also leaves the controller running.
 
 The same behavior is available without a view:
 

@@ -11,8 +11,7 @@ UIManager default defer: [
    session := agent newSessionWith: provider defaultModel.
    session tools: { SmallGPTalkEvaluate new }.
    UIManager default defer: [
-    [ (SmallGPTalkChat forSession: session provider: provider)
-      useImprovement: (SmallGPTalkImprovement forSession: session); open ]
+    [ (SmallGPTalkChat forSession: session provider: provider) open ]
      on: Error do: [ :error | UIManager default inform: error messageText ] ]
   ] on: Error do: [ :error |
    | message |
