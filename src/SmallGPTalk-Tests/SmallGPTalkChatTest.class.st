@@ -222,21 +222,3 @@ SmallGPTalkChatTest >> testRefreshPreservesTranscriptReadingPosition [
   self assert: pane offset equals: position
  ] ensure: [ chat disconnect ]
 ]
-
-{ #category : 'tests' }
-SmallGPTalkChatTest >> testFollowingIsAnExplicitViewChoice [
- | session first second |
- modelAction := [ :request | 'Done.' ].
- session := SmallGPTalkSession withModel: self.
- session tools: { SmallGPTalkEvaluate new }.
- first := SmallGPTalkChat forSession: session.
- second := SmallGPTalkChat forSession: session.
- [
-  self deny: first isFollowingAgent.
-  first followAgent: true.
-  self assert: first isFollowingAgent.
-  self deny: second isFollowingAgent.
-  first followAgent: false.
-  self deny: first isFollowingAgent
- ] ensure: [ first disconnect. second disconnect ]
-]

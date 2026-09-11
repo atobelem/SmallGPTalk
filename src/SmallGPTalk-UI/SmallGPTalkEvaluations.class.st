@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkEvaluations',
  #superclass : 'SpPresenter',
- #instVars : [ 'exchange', 'calls', 'source', 'output', 'inspectValue', 'inspectCall', 'inspectContext', 'refresh', 'interactions', 'openInteraction' ],
+ #instVars : [ 'exchange', 'calls', 'source', 'output', 'inspectValue', 'inspectCall', 'inspectContext', 'refresh' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -13,9 +13,6 @@ SmallGPTalkEvaluations class >> forExchange: anExchange [
 
 { #category : 'initialization' }
 SmallGPTalkEvaluations >> initializePresenters [
- interactions := self newList display: [ :interaction | interaction label ]; yourself.
- openInteraction := self newButton label: 'Open interaction'; enabled: false; action: [ self selectedInteraction ifNotNil: #open ]; yourself.
- interactions whenSelectionChangedDo: [ openInteraction enabled: self selectedInteraction notNil ].
  calls := self newList display: [ :call | call id, ' — ', call state asString ]; yourself.
  calls whenSelectionChangedDo: [ self showSelection ].
  source := self newCode beNotEditable.
@@ -30,9 +27,6 @@ SmallGPTalkEvaluations >> initializePresenters [
 SmallGPTalkEvaluations >> defaultLayout [
  ^ SpBoxLayout newVertical spacing: 6;
   add: calls height: 100;
-  add: (self newLabel label: 'Interactions') expand: false;
-  add: interactions height: 70;
-  add: openInteraction height: 28;
   add: (self newLabel label: 'Source') expand: false;
   add: source;
   add: (self newLabel label: 'Output') expand: false;
@@ -44,7 +38,7 @@ SmallGPTalkEvaluations >> defaultLayout [
 { #category : 'initialization' }
 SmallGPTalkEvaluations >> initializeWindow: window [
  super initializeWindow: window.
- window title: 'SmallGPTalk evaluations'; initialExtent: 700 @ 620
+ window title: 'SmallGPTalk evaluations'; initialExtent: 700 @ 500
 ]
 
 { #category : 'configuration' }
@@ -79,9 +73,6 @@ SmallGPTalkEvaluations >> outputText [ ^ output text ]
 SmallGPTalkEvaluations >> showSelection [
  | call arguments text |
  call := self selectedCall.
- interactions items: ((call notNil and: [ call operation notNil and: [ call operation respondsTo: #interactions ] ])
-  ifTrue: [ call operation interactions ] ifFalse: [ #() ]).
- interactions items ifNotEmpty: [ interactions selectIndex: 1 ].
  inspectValue enabled: (call notNil and: [ call operation notNil ]).
  inspectCall enabled: call notNil.
  inspectContext enabled: call notNil.
@@ -90,9 +81,4 @@ SmallGPTalkEvaluations >> showSelection [
  text := arguments isDictionary ifTrue: [ arguments at: 'source' ifAbsent: [ '' ] ] ifFalse: [ '' ].
  source text: (text isString ifTrue: [ text ] ifFalse: [ '' ]).
  output text: (call operation ifNil: [ call error ifNil: [ call state asString ] ] ifNotNil: [ :operation | operation output ])
-]
-
-{ #category : 'interactions' }
-SmallGPTalkEvaluations >> selectedInteraction [
- ^ interactions selectedItem
 ]

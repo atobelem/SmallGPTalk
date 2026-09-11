@@ -185,53 +185,6 @@ Truncation sets `truncated` and adds an ellipsis. It does not shorten the real
 result object. Compiler and ordinary execution errors are caught without
 opening a debugger.
 
-## Follow work in Pharo
-
-Each evaluation has a local object named `pharo`. It records requests to open
-native tools and returns the supplied target:
-
-```smalltalk
-pharo browse: MyClass.
-pharo browse: (MyClass >> #myMethod).
-pharo browse: (MyClass class >> #myClassMethod).
-pharo inspect: result.
-```
-
-Enable **Follow agent** in the chat to open future interactions in the UI
-process. The evaluation does not wait for a window. The option starts off and
-belongs to each view. Turning it off or closing the chat removes that view's
-subscription and discards its pending openings. Already opened tools remain.
-Turning it on does not replay old interactions. A fork starts with following off.
-
-In **Inspect evaluations**, select an evaluation and an interaction, then press
-**Open interaction** to open it later. The record retains the target object and
-its evaluation of origin. Browser entries show the class and method selector.
-Fork copies these records and links them to the copied evaluation. Live targets
-remain shared. A browser selects the current method in the image; it does not
-restore an earlier version of that method.
-
-Use `pharo browse:` after compiling a method to show where the code lives.
-Reflection and ordinary compilation do not open windows automatically. Direct
-sends such as `Object browse` bypass this recording protocol. **Follow agent**
-controls only requests sent through `pharo`.
-
-The binding is an instance of `SmallGPTalkWorkspace`, local to its evaluation.
-It does not install a global variable. Without a connected view, interactions
-are recorded without opening tools. The tool description explains this protocol
-to the model; the launcher prompt remains unchanged.
-
-```smalltalk
-run exchange calls first operation interactions inspect.
-```
-
-Supply tools before opening a following view. `session tools` returns a copy
-of the tool collection. To connect a custom UI, subscribe to an evaluate tool
-with `whenInteraction:` and remove the subscription with
-`removeInteractionObserver:`. Notifications run in the evaluation process;
-schedule window work on the UI process. Tool observer errors are available
-through `interactionErrors`. Native opening errors are retained in
-`chat interactionErrors` and shown in the chat status.
-
 ## Execution and limits
 
 One run can be active per session. One run with image tools can hold the image

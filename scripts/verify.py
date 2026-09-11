@@ -43,7 +43,7 @@ def run(command, log, env, timeout=300, cwd=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--native', action='store_true', help='Check native views and workspace interactions.')
+    parser.add_argument('--native', action='store_true', help='Check four native views.')
     parser.add_argument('--live', action='store_true', help='Use the stored OpenAI login.')
     args = parser.parse_args()
     base_name = os.environ.get('SMALLGPTALK_BASE_IMAGE')
@@ -73,7 +73,7 @@ def main():
               ('refresh-cost', loaded, False)]
     if args.native:
         checks += [(name, loaded, True) for name in
-                   ('chat', 'stream-view', 'context-estimate-ui', 'evaluations', 'workspace')]
+                   ('chat', 'stream-view', 'context-estimate-ui', 'evaluations')]
     if args.live:
         checks.append(('live-session', loaded, False))
     for name, source, native in checks:

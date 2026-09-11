@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkEvaluation',
  #superclass : 'Object',
- #instVars : [ 'source', 'result', 'error', 'state', 'output', 'outputLimit', 'truncated', 'timeLimit', 'workspace' ],
+ #instVars : [ 'source', 'result', 'error', 'state', 'output', 'outputLimit', 'truncated', 'timeLimit' ],
  #category : 'SmallGPTalk-Pharo'
 }
 
@@ -15,7 +15,6 @@ SmallGPTalkEvaluation class >> source: text [
 SmallGPTalkEvaluation >> prepare: text [
  source := text copy.
  state := #pending.
- workspace := SmallGPTalkWorkspace forEvaluation: self.
  output := ''.
  outputLimit := 20000.
  timeLimit := SmallGPTalkTimeLimit seconds: 10.
@@ -30,7 +29,6 @@ SmallGPTalkEvaluation >> execute [
   [
    timeLimit value: [
    result := OpalCompiler new
-    bindings: { 'pharo' -> workspace };
     source: source;
     permitUndeclared: false;
     failBlock: [ :notice | self error: notice messageText ];
@@ -62,8 +60,7 @@ SmallGPTalkEvaluation >> postCopy [
  super postCopy.
  source := source copy.
  output := output copy.
- error := error copy.
- workspace := workspace copyFor: self
+ error := error copy
 ]
 
 { #category : 'configuration' }
@@ -101,14 +98,4 @@ SmallGPTalkEvaluation >> truncated [ ^ truncated ]
 SmallGPTalkEvaluation >> timeoutSeconds: seconds [
  state = #pending ifFalse: [ self error: 'Set the time limit before execution.' ].
  timeLimit := SmallGPTalkTimeLimit seconds: seconds
-]
-
-{ #category : 'interactions' }
-SmallGPTalkEvaluation >> interactions [
- ^ workspace interactions
-]
-
-{ #category : 'interactions' }
-SmallGPTalkEvaluation >> reportInteractionsTo: observers [
- workspace reportTo: observers
 ]

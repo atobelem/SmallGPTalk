@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkChat',
  #superclass : 'SpPresenter',
- #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'nextUsage', 'refreshingHistory', 'refreshQueue', 'followAgent', 'follower' ],
+ #instVars : [ 'session', 'observer', 'exchanges', 'details', 'input', 'send', 'inspect', 'inspectContext', 'inspectCalls', 'compact', 'fork', 'usage', 'status', 'cancel', 'provider', 'modelSelector', 'nextUsage', 'refreshingHistory', 'refreshQueue' ],
  #category : 'SmallGPTalk-UI'
 }
 
@@ -40,10 +40,6 @@ SmallGPTalkChat >> modelSelector [ ^ modelSelector ]
 
 { #category : 'initialization' }
 SmallGPTalkChat >> initializePresenters [
- followAgent := self newCheckBox label: 'Follow agent'; state: false; yourself.
- follower := SmallGPTalkFollower schedule: [ :work | self application defer: work ] open: [ :interaction |
-  [ interaction open ] on: Error , Halt do: [ :failure | status label: failure messageText. failure pass ] ].
- followAgent whenChangedDo: [ :enabled | self updateFollowing ].
  exchanges := self newList.
  exchanges display: [ :exchange | (exchange request contractTo: 60), ' — ', exchange state asString ].
  exchanges whenSelectionChangedDo: [ refreshingHistory == true ifFalse: [ self showSelection ] ].
@@ -77,7 +73,6 @@ SmallGPTalkChat >> defaultLayout [
 { #category : 'layout' }
 SmallGPTalkChat >> historyLayout [
  ^ SpBoxLayout newVertical spacing: 6;
-  add: followAgent height: 28;
   add: (self newLabel label: 'History') expand: false;
   add: exchanges;
   add: (self newLabel label: 'Selected exchange') expand: false;
@@ -125,7 +120,6 @@ SmallGPTalkChat >> connectTo: aSession [
  exchanges items: #().
  status label: ''.
  self selectCurrentModel.
- self updateFollowing.
  self refresh
 ]
 
@@ -145,7 +139,6 @@ SmallGPTalkChat >> refreshFor: exchange from: subscription [
 
 { #category : 'connection' }
 SmallGPTalkChat >> disconnect [
- follower ifNotNil: [ follower stop ].
  refreshQueue ifNotNil: [ refreshQueue stop. refreshQueue := nil ].
  observer ifNotNil: [ session removeObserver: observer. observer := nil ].
 ]
@@ -258,24 +251,3 @@ SmallGPTalkChat >> estimateText [ ^ nextUsage label ]
 
 { #category : 'configuration' }
 SmallGPTalkChat >> messageText: text [ input text: text ]
-
-{ #category : 'interactions' }
-SmallGPTalkChat >> updateFollowing [
- follower stop.
- (session notNil and: [ followAgent state ]) ifTrue: [ follower follow: session tools ]
-]
-
-{ #category : 'interactions' }
-SmallGPTalkChat >> followAgent: enabled [
- followAgent state: enabled
-]
-
-{ #category : 'interactions' }
-SmallGPTalkChat >> isFollowingAgent [
- ^ followAgent state
-]
-
-{ #category : 'interactions' }
-SmallGPTalkChat >> interactionErrors [
- ^ follower errors
-]
