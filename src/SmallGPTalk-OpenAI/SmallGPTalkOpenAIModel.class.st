@@ -31,8 +31,9 @@ SmallGPTalkOpenAIModel >> respondTo: request [
   (transport respondsTo: #post:headers:onText:)
    ifTrue: [ transport post: body headers: headers onText: [ :text | request receiveText: text ] ]
    ifFalse: [ transport post: body headers: headers ] ].
+ reply := SmallGPTalkReply from: reply.
  self recordUsageFor: reply.
- (reply isKindOf: SmallGPTalkReply) ifTrue: [ reply usage ifNotNil: [ :usage | usage inputBytes: bytes ] ].
+ reply usage ifNotNil: [ :usage | usage inputBytes: bytes ].
  ^ reply
 ]
 
@@ -40,7 +41,6 @@ SmallGPTalkOpenAIModel >> respondTo: request [
 SmallGPTalkOpenAIModel >> recordUsageFor: reply [
  | data count |
  contextWindow ifNil: [ ^ self ].
- (reply isKindOf: SmallGPTalkReply) ifFalse: [ ^ self ].
  reply providerData ifNil: [ ^ self ].
  data := reply providerData at: 'usage' ifAbsent: [ ^ self ].
  data isDictionary ifFalse: [ ^ self ].

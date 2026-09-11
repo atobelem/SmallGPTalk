@@ -21,11 +21,8 @@ SmallGPTalkMessageText class >> forExchange: exchange [
  | text |
  text := self message: exchange request role: 'You'.
  exchange replies do: [ :reply |
-  (reply isKindOf: SmallGPTalkReply)
-   ifTrue: [
-    text := text, (self message: reply text role: 'Assistant').
-    reply calls do: [ :call | text := text, (self forCall: call) ] ]
-   ifFalse: [ reply isString ifTrue: [ text := text, (self message: reply role: 'Assistant') ] ] ].
+  text := text, (self message: reply text role: 'Assistant').
+  reply calls do: [ :call | text := text, (self forCall: call) ] ].
  exchange partialText ifNotEmpty: [ :draft |
   text := text, (self message: draft role: 'Assistant (in progress)') ].
  exchange error ifNotNil: [ :error | text := text, error asText ].

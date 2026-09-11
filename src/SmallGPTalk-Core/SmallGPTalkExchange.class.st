@@ -92,13 +92,12 @@ SmallGPTalkExchange >> answerUsing: model tools: tools limit: count requestLimit
    modelContext := request.
    reply := self responseFrom: model request: request limit: timeLimit during: run.
    state = #running ifFalse: [ ^ nil ].
-   (reply isKindOf: SmallGPTalkReply) ifTrue: [
-    reply validateWithUsedIds: self usedCallIds.
-    reply context: request ].
+   reply := SmallGPTalkReply from: reply.
+   reply validateWithUsedIds: self usedCallIds.
+   reply context: request.
    replies add: reply.
    self reportChange.
-   (reply isKindOf: SmallGPTalkReply) ifFalse: [ ^ reply ].
-   reply calls ifEmpty: [ ^ reply ].
+   reply calls ifEmpty: [ ^ reply result ].
    reply calls do: [ :call |
     state = #running ifFalse: [ ^ nil ].
     call executeWith: tools startWhen: [ :start | run whileRunningDo: start ] onStart: [
@@ -140,19 +139,17 @@ SmallGPTalkExchange >> copyWithHistory: earlierExchanges [
 SmallGPTalkExchange >> restoreHistory: earlierExchanges [
  | responseIndex originalReplies originalModelContext |
  changes := nil.
- responseIndex := replies identityIndexOf: response.
+ responseIndex := replies findFirst: [ :reply | reply result == response ].
  context := context withHistory: (earlierExchanges last: context history size).
  self rememberCallsFrom: earlierExchanges.
  originalReplies := replies.
  originalModelContext := modelContext.
- replies := replies collect: [ :reply |
-  (reply isKindOf: SmallGPTalkReply) ifTrue: [ reply copy ] ifFalse: [ reply ] ].
+ replies := replies collect: #copy.
  modelContext := self copyContext: modelContext history: earlierExchanges originalReplies: originalReplies.
  replies withIndexDo: [ :reply :index |
-  (reply isKindOf: SmallGPTalkReply) ifTrue: [
-   reply context: (self copyContext: reply context history: earlierExchanges originalReplies: originalReplies).
-   (originalReplies at: index) context == originalModelContext ifTrue: [ modelContext := reply context ] ] ].
- responseIndex > 0 ifTrue: [ response := replies at: responseIndex ].
+  reply context: (self copyContext: reply context history: earlierExchanges originalReplies: originalReplies).
+  (originalReplies at: index) context == originalModelContext ifTrue: [ modelContext := reply context ] ].
+ responseIndex > 0 ifTrue: [ response := (replies at: responseIndex) result ].
  error := error copy
 ]
 
@@ -166,7 +163,7 @@ SmallGPTalkExchange >> copyContext: request history: history originalReplies: or
 { #category : 'accessing' }
 SmallGPTalkExchange >> contextForCall: call [
  ^ (replies detect: [ :reply |
-  (reply isKindOf: SmallGPTalkReply) and: [ reply calls anySatisfy: [ :each | each == call ] ] ]
+  reply calls anySatisfy: [ :each | each == call ] ]
   ifNone: [ self error: 'Choose a call from this exchange.' ]) context
 ]
 
@@ -203,7 +200,7 @@ SmallGPTalkExchange >> partialText [ ^ partialText ifNil: [ '' ] ifNotNil: [ par
 { #category : 'measurement' }
 SmallGPTalkExchange >> modelUsage [
  ^ (replies reversed detect: [ :reply |
-  (reply isKindOf: SmallGPTalkReply) and: [ reply context == self modelContext ] ]
+  reply context == self modelContext ]
   ifNone: [ ^ nil ]) usage
 ]
 

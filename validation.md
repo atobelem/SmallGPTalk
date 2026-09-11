@@ -1,8 +1,8 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 199 offline
-tests with seed 894721354. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 207 offline
+tests with seed 763305028. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -310,3 +310,35 @@ Evidence: `.build/review-red.log`, `.build/review-green.log`,
 The native `check-chat.st` check passed with shared views, model selection,
 window close, and compaction status. Its screenshot was inspected.
 See [review.md](review.md) for coverage and validation limits.
+
+## Uniform reply protocol
+
+Five initial behavior tests produced one failure and four errors in a 204-test
+run. They require reply records for simple text and opaque values, unchanged
+public result identity, correct fork records, and text continuation encoding.
+All 204 tests passed after adaptation was added. Three review tests also passed:
+custom conversion without inheritance, recorded text after the original string
+changes, and rejection of opaque values as provider text or summaries.
+The final suite passed 207 tests with seed 763305028.
+
+`SmallGPTalkReply from:` owns conversion. Consumers send reply messages instead
+of testing for `SmallGPTalkReply`. `SmallGPTalkValueReply` uses the same reply
+behavior and overrides the result and text continuation for simple values.
+No extension was added to Object or String. This is the first design correction;
+loop extraction and process supervision are separate work.
+
+Evidence: `.build/reply-protocol-red.log`, `.build/reply-protocol-green.log`,
+`.build/reply-protocol-final.log`. The loaded-source check passed for 72 classes
+and 747 methods (`.build/reply-source.log`). The core-only load and fork passed
+in a clean image (`.build/reply-core.log`).
+
+The encoding review used the official [function calling guide](https://developers.openai.com/api/docs/guides/function-calling).
+Provider output and matching call results remain in the continuation request.
+
+The native chat check passed with two views, model selection, close, and
+compaction status; its screenshot was inspected. The separate live session
+check passed with gpt-5.6-luna and low effort: one evaluation, automatic
+mid-turn compaction, fork, manual compaction, and continuation without another
+fixture mutation. Evidence: `.build/reply-native/native.log`,
+`.build/native-chat/result.txt`, and `.build/reply-live.log`. Both images exited
+without saving.

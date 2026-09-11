@@ -27,12 +27,10 @@ SmallGPTalkContext >> summaryRequestFrom: history [
 
 { #category : 'compaction' }
 SmallGPTalkContext >> absorb: reply through: count [
- | text |
- (reply isKindOf: SmallGPTalkReply)
-  ifTrue: [
-   reply calls ifNotEmpty: [ self error: 'A summary must not request tools.' ].
-   text := reply text ]
-  ifFalse: [ text := reply ].
+ | text adapted |
+ adapted := SmallGPTalkReply from: reply.
+ adapted calls ifNotEmpty: [ self error: 'A summary must not request tools.' ].
+ text := adapted text.
  (text isString and: [ text trimBoth isNotEmpty ]) ifFalse: [ self error: 'A summary must contain text.' ].
  summary := text copy.
  covered := count

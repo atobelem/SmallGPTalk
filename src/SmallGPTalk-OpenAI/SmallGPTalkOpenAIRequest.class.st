@@ -44,13 +44,10 @@ SmallGPTalkOpenAIRequest >> message: text role: role [
 
 { #category : 'private' }
 SmallGPTalkOpenAIRequest >> append: reply to: input [
- (reply isKindOf: SmallGPTalkReply) ifFalse: [
-  reply isString ifFalse: [ self error: 'The provider requires a text reply.' ].
-  input add: (self message: reply role: 'assistant'). ^ self ].
  reply providerData
   ifNotNil: [ :data | input addAll: (data at: 'output') ]
   ifNil: [
-   reply text ifNotEmpty: [ input add: (self message: reply text role: 'assistant') ].
+   reply continuationText ifNotEmpty: [ :text | input add: (self message: text role: 'assistant') ].
    reply calls do: [ :call | input add: (Dictionary new
     at: 'type' put: 'function_call'; at: 'call_id' put: call id;
     at: 'name' put: call name; at: 'arguments' put: (STONJSON toString: call arguments); yourself) ] ].

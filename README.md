@@ -32,7 +32,7 @@ The rewrite acceptance checks passed. On 2026-09-11, a fresh browser login
 stored credentials in Keychain. A second Pharo process used that record for a
 model request. Live checks also passed evaluation, automatic compaction within
 a tool turn, fork, and continuation without a repeated mutation.
-The current offline suite has 199 passing tests. See [review.md](review.md)
+The current offline suite has 207 passing tests. See [review.md](review.md)
 for the complete source review and its corrections.
 See [validation.md](validation.md) for evidence and validation limits.
 See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.
@@ -143,6 +143,24 @@ remain available for explicit composition and tests.
 
 The model protocol is `respondTo:`. The model receives a request object, not
 the session. Tests supply this protocol without a framework or live provider.
+
+The history uses one reply protocol. `SmallGPTalkReply from:` adapts model
+values at the boundary. A structured reply returns itself from
+`asSmallGPTalkReply`. A simple value uses `SmallGPTalkValueReply`, which retains
+the original object as its `result`. A string also supplies recorded text;
+other values have no display text and cannot be sent as provider text.
+Custom values can implement `asSmallGPTalkReply` without inheriting from a
+SmallGPTalk class.
+
+Replies answer `text`, `calls`, `context`, `usage`, `characterCount`, and
+`result`. The loop validates and records them through these messages. The UI,
+context measurement, and fork do not select behavior by reply class.
+`run result` and `exchange response` retain their existing meaning: a structured
+reply returns that reply, while a simple value returns the original object,
+including nil. Fork copies reply records and their contexts. Simple values
+remain shared by reference. Recorded string text does not change when the
+original string changes.
+
 
 ## Inspect the objects
 

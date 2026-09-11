@@ -90,3 +90,17 @@ their in-memory conversations until they are closed.
 Local `.build` evidence is ignored by Git. Older logs can be absent after a
 worktree is removed. Use [validation.md](validation.md) for the historical
 record and the scripts for repeatable checks.
+
+## Design follow-up: reply protocol
+
+The first design correction removes repeated reply-class checks from the loop,
+context, request measurement, fork, UI, and OpenAI model and encoder. One
+conversion protocol adapts raw model values. The result remains inspectable by
+identity, while conversation entries use a common reply protocol. Five tests
+failed before the change; the final suite has 207 passes. See
+[validation.md](validation.md#uniform-reply-protocol).
+
+The remaining design work is to reduce Exchange's execution responsibilities,
+share process supervision, isolate deferred improvement, and reduce unnecessary
+access to internal fields in ordinary UI tests. Passing tests do not close
+those design concerns.

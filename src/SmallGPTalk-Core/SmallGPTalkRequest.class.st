@@ -42,7 +42,7 @@ SmallGPTalkRequest >> following: completedReplies [
 
 { #category : 'private' }
 SmallGPTalkRequest >> useReplies: completedReplies [
- replies := completedReplies asArray copy
+ replies := completedReplies asArray collect: [ :reply | SmallGPTalkReply from: reply ]
 ]
 
 { #category : 'accessing' }
@@ -50,8 +50,7 @@ SmallGPTalkRequest >> replies [ ^ replies copy ]
 
 { #category : 'accessing' }
 SmallGPTalkRequest >> calls [
- ^ replies flatCollect: [ :reply |
-  (reply isKindOf: SmallGPTalkReply) ifTrue: [ reply calls ] ifFalse: [ #() ] ]
+ ^ replies flatCollect: #calls
 ]
 
 { #category : 'copying' }
@@ -115,10 +114,7 @@ SmallGPTalkRequest >> characterCount [
 
 { #category : 'measurement' }
 SmallGPTalkRequest >> replyCharacterCount [
- ^ replies inject: 0 into: [ :total :reply |
-  total + ((reply isKindOf: SmallGPTalkReply)
-   ifTrue: [ reply characterCount ]
-   ifFalse: [ reply isString ifTrue: [ reply size ] ifFalse: [ 0 ] ]) ]
+ ^ replies inject: 0 into: [ :total :reply | total + reply characterCount ]
 ]
 
 { #category : 'requests' }
@@ -143,9 +139,7 @@ SmallGPTalkRequest >> receiveText: fragment [
 
 { #category : 'measurement' }
 SmallGPTalkRequest >> usageForModel: model [
- replies ifNotEmpty: [
-  ^ (replies last isKindOf: SmallGPTalkReply)
-   ifTrue: [ replies last usage ] ifFalse: [ nil ] ].
+ replies ifNotEmpty: [ ^ replies last usage ].
  ^ history ifEmpty: [ nil ] ifNotEmpty: [ history last modelUsageFor: model ]
 ]
 
@@ -153,7 +147,6 @@ SmallGPTalkRequest >> usageForModel: model [
 SmallGPTalkRequest >> sizeUsageForModel: model [
  | measuredContext |
  measuredContext := replies ifNotEmpty: [
-  (replies last isKindOf: SmallGPTalkReply) ifFalse: [ ^ nil ].
   replies last context ] ifEmpty: [
    history ifEmpty: [ ^ nil ].
    history last modelContext ].

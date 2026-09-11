@@ -63,3 +63,19 @@ SmallGPTalkReply >> providerData [ ^ providerData deepCopy ]
 
 { #category : 'initialization' }
 SmallGPTalkReply >> providerData: data [ providerData := data deepCopy ]
+
+{ #category : 'conversion' }
+SmallGPTalkReply class >> from: value [
+ ^ (value respondsTo: #asSmallGPTalkReply)
+  ifTrue: [ value asSmallGPTalkReply ]
+  ifFalse: [ SmallGPTalkValueReply on: value ]
+]
+
+{ #category : 'conversion' }
+SmallGPTalkReply >> asSmallGPTalkReply [ ^ self ]
+
+{ #category : 'accessing' }
+SmallGPTalkReply >> result [ ^ self ]
+
+{ #category : 'accessing' }
+SmallGPTalkReply >> continuationText [ ^ self text ]
