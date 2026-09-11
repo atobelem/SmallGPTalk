@@ -140,3 +140,11 @@ SmallGPTalkRequest >> receiveText: fragment [
  fragment isString ifFalse: [ self error: 'A text fragment must be a string.' ].
  textObserver ifNotNil: [ textObserver value: fragment ]
 ]
+
+{ #category : 'measurement' }
+SmallGPTalkRequest >> usageForModel: model [
+ replies ifNotEmpty: [
+  ^ (replies last isKindOf: SmallGPTalkReply)
+   ifTrue: [ replies last usage ] ifFalse: [ nil ] ].
+ ^ history ifEmpty: [ nil ] ifNotEmpty: [ history last modelUsageFor: model ]
+]

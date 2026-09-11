@@ -151,7 +151,7 @@ SmallGPTalkSession >> compact [
 { #category : 'private' }
 SmallGPTalkSession >> prepareContextFor: exchange during: run [
  | history request reply |
- (context needsCompactionFor: exchange context) ifFalse: [ ^ self ].
+ (context needsCompactionFor: exchange context model: model) ifFalse: [ ^ self ].
  history := exchanges allButLast.
  request := context summaryRequestFrom: history.
  reply := requestLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ].

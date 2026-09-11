@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkExchange',
  #superclass : 'Object',
- #instVars : [ 'context', 'response', 'error', 'state', 'replies', 'previousCallIds', 'changes', 'modelContext', 'partialText' ],
+ #instVars : [ 'context', 'response', 'error', 'state', 'replies', 'previousCallIds', 'changes', 'modelContext', 'partialText', 'usedModel' ],
  #category : 'SmallGPTalk-Core'
 }
 
@@ -73,6 +73,7 @@ SmallGPTalkExchange >> finishCancellation [
 { #category : 'execution' }
 SmallGPTalkExchange >> answerUsing: model tools: tools limit: count requestLimit: timeLimit contextPolicy: policy during: run [
  | base covered |
+ usedModel := model.
  base := context.
  covered := 0.
  [
@@ -80,7 +81,7 @@ SmallGPTalkExchange >> answerUsing: model tools: tools limit: count requestLimit
    | reply request |
    state = #running ifFalse: [ ^ nil ].
    request := replies ifEmpty: [ base ] ifNotEmpty: [ base following: (replies allButFirst: covered) ].
-   (replies notEmpty and: [ policy needsCompactionFor: request ]) ifTrue: [
+   (replies notEmpty and: [ policy needsCompactionFor: request model: model ]) ifTrue: [
     modelContext := request forCompaction.
     reply := timeLimit value: [ model respondTo: modelContext ] startWhen: [ :start | run whileRunningDo: start ].
     state = #running ifFalse: [ ^ nil ].
@@ -216,4 +217,9 @@ SmallGPTalkExchange >> responseFrom: model request: request limit: timeLimit dur
   accepted ifTrue: [ self reportChange ] ].
  ^ [ timeLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ] ]
   ensure: [ request whenText: nil. partialText := nil ]
+]
+
+{ #category : 'measurement' }
+SmallGPTalkExchange >> modelUsageFor: model [
+ ^ usedModel == model ifTrue: [ self modelUsage ] ifFalse: [ nil ]
 ]

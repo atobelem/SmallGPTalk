@@ -1,7 +1,7 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 161 offline
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 170 offline
 tests with seed 817845566. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
@@ -183,9 +183,22 @@ sleep. The updated runner passed all 161 tests.
 - Verify renewal after HTTP 401 against a live account when that failure occurs.
   Offline tests cover one retry, repeated rejection, other HTTP failures,
   logout, newer credentials, failed storage, and continuation after evaluation.
-- Measured input usage now uses the catalog context window. Automatic compaction
-  still uses a configured character threshold, and missing measurements use the
-  explicitly labelled character fallback.
+- Automatic compaction uses the latest measured input tokens at an 80% threshold.
+  It cannot count new input or tool output before the next provider measurement.
+  Missing measurements use the character fallback.
 
 File tools, shell tools, other providers, MCP, agent teams, and persistent
 conversation storage remain outside this version's scope.
+
+
+## Token compaction update
+
+Four behavior tests first produced three failures and one error (165 tests,
+seed 77958470). After the change, all 165 passed. Four further checks covered
+model changes, manual summaries, fork, and disabling automatic compaction.
+A character-policy selection test then failed (170 tests, one failure).
+The final suite passed all 170 tests (seed 255424582); see
+`.build/token-compaction-final.log`.
+The live-session script now selects the character policy explicitly so that
+its small fixture still forces compaction. The token policy is verified with
+supplied measurements in offline tests, not a live near-capacity request.

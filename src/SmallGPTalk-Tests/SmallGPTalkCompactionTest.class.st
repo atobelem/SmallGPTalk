@@ -349,3 +349,153 @@ SmallGPTalkCompactionTest >> testForkCopiesTheLimitWithoutUsingALaterSummary [
  fork context autoCompactLimit: 100.
  self assert: session context autoCompactLimit isNil
 ]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testMeasuredTokensTriggerCompactionBeforeNextRequest [
+ | session run requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 80 capacity: 100); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ (session send: 'First') wait.
+ requests := OrderedCollection new.
+ modelAction := [ :request | requests add: request. 'Summary or answer.' ].
+ run := session send: 'Next'. run wait.
+ self assert: run state equals: #completed.
+ self assert: requests size equals: 2.
+ self assert: requests first isCompaction.
+ self assert: requests last history isEmpty
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testMeasuredTokensTakePriorityOverCharactersWithoutRounding [
+ | session requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 799 capacity: 1000); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ (session send: 'First') wait.
+ session context autoCompactLimit: 1.
+ requests := OrderedCollection new.
+ modelAction := [ :request | requests add: request. 'Answer.' ].
+ (session send: 'Next') wait.
+ self assert: requests size equals: 1.
+ self deny: requests first isCompaction
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testTokenPolicyConfigurationAndFork [
+ | context fork |
+ context := SmallGPTalkContext new.
+ self assert: context autoCompactPercentage equals: 80.
+ context autoCompactPercentage: 70.
+ fork := context forFork.
+ self assert: fork autoCompactPercentage equals: 70.
+ fork autoCompactPercentage: nil.
+ self assert: context autoCompactPercentage equals: 70.
+ #(0 101 -1 1.5) do: [ :invalid |
+  self should: [ context autoCompactPercentage: invalid ] raise: Error ]
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testTokenCompactionWithinToolTurnKeepsCompletedCall [
+ | session run requests call |
+ call := SmallGPTalkCall id: 'once' name: 'evaluate' arguments:
+  (Dictionary new at: 'source' put: '6 factorial'; yourself).
+ requests := OrderedCollection new.
+ modelAction := [ :request |
+  requests add: request.
+  requests size = 1
+   ifTrue: [ (SmallGPTalkReply text: '' calls: { call })
+    usage: (SmallGPTalkContextUsage inputTokens: 90 capacity: 100); yourself ]
+   ifFalse: [ 'The evaluation is complete.' ] ].
+ session := SmallGPTalkSession withModel: self.
+ session tools: { SmallGPTalkEvaluate new }.
+ run := session send: 'Evaluate'. run wait.
+ self assert: run state equals: #completed.
+ self assert: requests size equals: 3.
+ self assert: requests second isCompaction.
+ self assert: requests last calls first identicalTo: call.
+ self assert: call result equals: 720.
+ self assert: run exchange calls size equals: 1
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testChangingModelDoesNotReuseItsTokenMeasurement [
+ | session replacement requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 90 capacity: 100); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ (session send: 'First') wait.
+ replacement := self copy.
+ session useModel: replacement.
+ requests := OrderedCollection new.
+ replacement answerWith: [ :request | requests add: request. 'Answer.' ].
+ (session send: 'Next') wait.
+ self assert: requests size equals: 1.
+ self deny: requests first isCompaction
+]
+
+{ #category : 'model protocol' }
+SmallGPTalkCompactionTest >> answerWith: block [ modelAction := block ]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testManualSummaryDoesNotReuseOldTokenMeasurement [
+ | session requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 90 capacity: 100); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ (session send: 'First') wait.
+ modelAction := [ :request | 'Summary.' ].
+ session compact wait.
+ requests := OrderedCollection new.
+ modelAction := [ :request | requests add: request. 'Answer.' ].
+ (session send: 'Next') wait.
+ self assert: requests size equals: 1.
+ self deny: requests first isCompaction
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testForkUsesItsCopiedMeasurementAndThreshold [
+ | session run fork requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 75 capacity: 100); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ session context autoCompactPercentage: 70.
+ run := session send: 'First'. run wait.
+ fork := session forkAt: run exchange.
+ requests := OrderedCollection new.
+ modelAction := [ :request | requests add: request. 'Summary or answer.' ].
+ (fork send: 'Next') wait.
+ self assert: requests size equals: 2.
+ self assert: requests first isCompaction.
+ self assert: session conversation size equals: 1
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testAutomaticCompactionCanBeDisabledWithMeasuredTokens [
+ | session requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 90 capacity: 100); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ session context autoCompactPercentage: nil; autoCompactLimit: nil.
+ (session send: 'First') wait.
+ requests := OrderedCollection new.
+ modelAction := [ :request | requests add: request. 'Answer.' ].
+ (session send: 'Next') wait.
+ self assert: requests size equals: 1.
+ self deny: requests first isCompaction
+]
+
+{ #category : 'tests - tokens' }
+SmallGPTalkCompactionTest >> testDisablingTokenThresholdSelectsCharacterPolicy [
+ | session requests |
+ modelAction := [ :request | (SmallGPTalkReply text: 'A' calls: #())
+  usage: (SmallGPTalkContextUsage inputTokens: 1 capacity: 100); yourself ].
+ session := SmallGPTalkSession withModel: self.
+ (session send: 'First') wait.
+ session context autoCompactPercentage: nil; autoCompactLimit: 1.
+ requests := OrderedCollection new.
+ modelAction := [ :request | requests add: request. 'Summary or answer.' ].
+ (session send: 'Next') wait.
+ self assert: requests size equals: 2.
+ self assert: requests first isCompaction
+]

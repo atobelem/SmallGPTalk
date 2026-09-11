@@ -190,10 +190,12 @@ can delay termination. Image access has no sandbox or automatic rollback.
 | Model request | 120 seconds | `session requestTimeoutSeconds:` |
 | Evaluation | 10 seconds | `tool timeoutSeconds:` |
 | Printed output | 20,000 characters | `tool outputLimit:` |
-| Automatic compaction | 60,000 characters | `session context autoCompactLimit:` |
+| Automatic compaction | 80% of measured model capacity | `session context autoCompactPercentage:` |
+| Character fallback | 60,000 characters | `session context autoCompactLimit:` |
 
-Configure tools before supplying them to a session. Set the compaction limit
-to nil to disable automatic compaction.
+Configure tools before supplying them to a session. Set both compaction limits
+to nil to disable automatic compaction. Set only `autoCompactPercentage:` to nil
+to select the character policy. Token percentages must be integers from 1 to 100.
 
 ## Fork and compact
 
@@ -248,8 +250,21 @@ the next request after new output and tool results.
 If measured usage is unavailable, the indicator explicitly shows selected text
 against the character limit. That fallback excludes provider framing and tool
 schemas. Missing or invalid optional usage data does not discard a completed
-response. Automatic compaction still uses its configured character threshold;
-the token indicator does not change that policy.
+response.
+
+Automatic compaction uses the latest completed request's input tokens and model
+capacity. It starts at 80% by default, without rounding the comparison. The UI
+rounds its displayed percentage. A measurement of 79.9% can display 80% before
+compaction starts. If the latest request has no measurement, the character
+limit applies. A change of model does not reuse the old model's measurement.
+After a manual summary, covered history does not trigger another compaction.
+Fork keeps the configured thresholds and the copied history measurements.
+
+The measurement excludes new user text, generated output, and tool results
+added after that request. It is not a token count for the next request. A large
+new input can exceed the window before another measurement is available.
+The live-session check explicitly selects the character policy to force
+compaction with a small fixture; token decisions have separate offline tests.
 
 ## Open views and observe
 

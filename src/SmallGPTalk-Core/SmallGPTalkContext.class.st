@@ -2,7 +2,7 @@
 Class {
  #name : 'SmallGPTalkContext',
  #superclass : 'Object',
- #instVars : [ 'summary', 'covered', 'autoCompactLimit' ],
+ #instVars : [ 'summary', 'covered', 'autoCompactLimit', 'autoCompactPercentage' ],
  #category : 'SmallGPTalk-Core'
 }
 
@@ -10,7 +10,8 @@ Class {
 SmallGPTalkContext >> initialize [
  super initialize.
  covered := 0.
- autoCompactLimit := 60000
+ autoCompactLimit := 60000.
+ autoCompactPercentage := 80
 ]
 
 { #category : 'requests' }
@@ -71,5 +72,26 @@ SmallGPTalkContext >> request: request summarizedBy: reply [
 
 { #category : 'copying' }
 SmallGPTalkContext >> forFork [
- ^ self class new autoCompactLimit: autoCompactLimit; yourself
+ ^ self class new autoCompactLimit: autoCompactLimit;
+  autoCompactPercentage: autoCompactPercentage; yourself
+]
+
+{ #category : 'configuration' }
+SmallGPTalkContext >> autoCompactPercentage: percentage [
+ (percentage isNil or: [ percentage isInteger and: [ percentage between: 1 and: 100 ] ])
+  ifFalse: [ self error: 'The token percentage must be an integer from 1 to 100 or nil.' ].
+ autoCompactPercentage := percentage
+]
+
+{ #category : 'accessing' }
+SmallGPTalkContext >> autoCompactPercentage [ ^ autoCompactPercentage ]
+
+{ #category : 'testing' }
+SmallGPTalkContext >> needsCompactionFor: request model: model [
+ | usage |
+ (request history isEmpty and: [ request replies isEmpty ]) ifTrue: [ ^ false ].
+ usage := request usageForModel: model.
+ (usage isNil or: [ autoCompactPercentage isNil ])
+  ifTrue: [ ^ self needsCompactionFor: request ].
+ ^ usage inputTokens * 100 >= (usage capacity * autoCompactPercentage)
 ]

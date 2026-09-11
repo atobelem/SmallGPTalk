@@ -11,7 +11,7 @@
  agent instructions: 'You are SmallGPTalk, a Smalltalk agent in Pharo. Use evaluate for image operations. Completed image changes remain. Do not repeat completed changes. Use simplified English.'.
  session := agent newSessionWith: model.
  session tools: { SmallGPTalkEvaluate new }.
- session context autoCompactLimit: 100.
+ session context autoCompactPercentage: nil; autoCompactLimit: 100.
  run := session send: 'Use evaluate exactly once with this source: SmallGPTalkLiveFixture increment. Then report its result.'.
  run wait.
  run state = #completed ifFalse: [
