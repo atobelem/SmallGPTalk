@@ -34,19 +34,11 @@ SmallGPTalkRun >> start: work whenFinished: cleanup [
 
 { #category : 'private' }
 SmallGPTalkRun >> execute: work [
- | worker finished value failure |
- finished := Semaphore new.
- worker := [
-  [ [ value := work value ] on: Error , Halt do: [ :exception |
-    failure := exception messageText copy ] ] ensure: [ finished signal ]
- ] newProcess.
- worker priority: (Processor activePriority - 1 max: 1).
- [
-  lock critical: [ self state = #running ifTrue: [ worker resume ] ].
-  [ (finished waitTimeoutMilliseconds: 10) and: [ self state = #running ] ] whileTrue
- ] ensure: [
-  worker isTerminated ifFalse: [ worker terminate ].
-  [ worker isTerminated ] whileFalse: [ (Delay forMilliseconds: 10) wait ] ].
+ | value failure |
+ [ value := SmallGPTalkProcessSupervisor new
+  value: work startWhen: [ :start | self whileRunningDo: start ]
+  whileWaiting: [ self state = #running ] ]
+   on: Error , Halt do: [ :error | failure := error messageText copy ].
  lock critical: [
   self state = #cancelling
    ifTrue: [ exchange finishCancellation ]

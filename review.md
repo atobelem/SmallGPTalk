@@ -100,8 +100,8 @@ identity, while conversation entries use a common reply protocol. Five tests
 failed before the change; the final suite has 207 passes. See
 [validation.md](validation.md#uniform-reply-protocol).
 
-The turn extraction below addresses execution in Exchange. Remaining work is
-to share process supervision, isolate deferred improvement, and reduce unnecessary
+The extractions below address execution in Exchange and process supervision.
+Remaining work is to isolate deferred improvement and reduce unnecessary
 access to internal fields in ordinary UI tests. Passing tests do not close
 those design concerns.
 
@@ -113,3 +113,12 @@ This separates execution from records without adding provider or UI knowledge.
 Two new collaboration tests failed before implementation; all 209 tests now
 pass. Core-only, loaded-source, native chat, and live session checks passed.
 See [validation.md](validation.md#turn-execution-and-exchange-records).
+
+## Design follow-up: process supervision
+
+Run and TimeLimit now share `SmallGPTalkProcessSupervisor`. The supervisor
+owns the worker lifecycle. Its callers supply permission to start and the rule
+to continue waiting. Run retains cancellation and outcome handling; TimeLimit
+retains the deadline. Five tests failed before extraction, then all 214 passed.
+The clean core load, source check, and native chat check also passed.
+See [validation.md](validation.md#shared-process-supervision).

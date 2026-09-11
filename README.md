@@ -17,6 +17,7 @@ TDD. Use composition. Add an abstraction when a behavior needs it.
 The session owns execution and conversation history. A view can observe that
 session without owning it. A `SmallGPTalkTurn` executes model requests and tools.
 Its `SmallGPTalkExchange` records replies, context, and preview text.
+Runs and time limits share a process supervisor. Each supplies its stop rule.
 Provider details stay outside the core loop.
 `evaluate` is the only initial image tool. It gives access to Pharo reflection,
 compilation, and SUnit through Smalltalk expressions.
@@ -34,7 +35,7 @@ The rewrite acceptance checks passed. On 2026-09-11, a fresh browser login
 stored credentials in Keychain. A second Pharo process used that record for a
 model request. Live checks also passed evaluation, automatic compaction within
 a tool turn, fork, and continuation without a repeated mutation.
-The current offline suite has 209 passing tests. See [review.md](review.md)
+The current offline suite has 214 passing tests. See [review.md](review.md)
 for the complete source review and its corrections.
 See [validation.md](validation.md) for evidence and validation limits.
 See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.

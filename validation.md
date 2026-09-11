@@ -1,8 +1,8 @@
 # Rewrite validation
 
 These results belong to this rewrite, not to the archived implementation.
-The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 209 offline
-tests with seed 799023428. The historical cancellation timeout and a separate
+The rewrite acceptance checks passed. The latest clean Pharo 13 run passed all 214 offline
+tests with seed 51736904. The historical cancellation timeout and a separate
 completion-signal defect are explained below.
 
 The latest source review is in [review.md](review.md). Counts in the dated
@@ -366,3 +366,29 @@ The live check passed with gpt-5.6-luna and low effort: one verified evaluation,
 automatic compaction within the turn, fork, manual compaction, and continuation
 without repeating the mutation (`.build/turn-live.log`). Check images exited
 without saving.
+
+## Shared process supervision
+
+Five tests first produced two failures and three errors in a 214-test run.
+They require result identity after cleanup, a denied start, error and Halt
+handling, a stop rule, and cleanup when the stop rule signals an error.
+After extraction, all 214 tests passed with seed 51736904. The existing model
+timeout, busy Smalltalk cancellation, nested evaluation cancellation, and
+completion-wait tests passed without changes.
+
+`SmallGPTalkProcessSupervisor` creates, waits for, and stops the worker.
+It waits for termination before it returns control. `SmallGPTalkRun` supplies
+the cancellation rule and records the outcome. `SmallGPTalkTimeLimit` supplies
+the deadline rule. The supervisor has no conversation or UI knowledge.
+Foreign calls can still delay termination.
+
+Evidence: `.build/supervisor-red.log` and `.build/supervisor-green.log`.
+The loaded-source check inspected 76 classes and 772 methods with zero issues
+(`.build/supervisor-source.log`). A clean core-only load and independent fork
+passed (`.build/supervisor-core.log`). The native chat check passed and its
+screenshot was inspected (`.build/supervisor-native/native.log`).
+The live session check passed with gpt-5.6-luna and low effort: one independently
+verified evaluation, automatic compaction, fork, manual compaction, and
+continuation without another mutation (`.build/supervisor-live.log`). Native
+and live check images exited without saving. OAuth and token renewal were not
+retested for this refactor.
