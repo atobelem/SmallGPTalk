@@ -117,3 +117,24 @@ SmallGPTalkOpenAIProviderTest >> testCatalogSuppliesTheModelContextWindow [
  self assert: provider models first contextWindow equals: 272000.
  self assert: provider defaultModel contextWindow equals: 272000
 ]
+
+{ #category : 'tests - UI' }
+SmallGPTalkOpenAIProviderTest >> testApplyingModelUpdatesTheDraftEstimateWithoutSending [
+ | provider session chat original |
+ (catalog at: 'models') first at: 'context_window' put: 1000.
+ catalog at: 'models' put: (catalog at: 'models'), {
+  STONJSON fromString: '{"slug":"larger-model","visibility":"list","context_window":20000,"supported_reasoning_levels":[{"effort":"low"}]}' }.
+ provider := self provider.
+ session := SmallGPTalkSession withModel: provider defaultModel.
+ chat := SmallGPTalkChat forSession: session provider: provider.
+ [
+  chat messageText: 'Explain 6 factorial.'.
+  original := chat estimateText.
+  self assert: (original includesSubstring: '/ 1000 input tokens').
+  chat modelSelector selectModel: 'larger-model' effort: 'low'; applySelection.
+  self assert: session model identifier equals: 'larger-model'.
+  self assert: (chat estimateText includesSubstring: '/ 20000 input tokens').
+  self assert: sent isNil.
+  self assert: session conversation isEmpty
+ ] ensure: [ chat disconnect ]
+]

@@ -21,7 +21,9 @@ SmallGPTalkChat >> useProvider: aProvider [
  provider := aProvider.
  modelSelector := self instantiate: SmallGPTalkModelSelector.
  modelSelector models: provider models; onChoose: [ :identifier :effort |
-  self performAction: [ session useModel: (provider model: identifier effort: effort) ] ].
+  self performAction: [
+   session useModel: (provider model: identifier effort: effort).
+   self showNextEstimate ] ].
  self selectCurrentModel
 ]
 
