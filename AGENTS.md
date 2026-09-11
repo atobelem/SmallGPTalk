@@ -1,17 +1,5 @@
 # SmallGPTalk development rules
 
-## Fresh implementation
-
-This directory contains the rewrite from zero, now integrated into main.
-The temporary rewrite worktree was removed. The archived tag and Git stash
-retain the previous implementation and the abandoned local refactor.
-The old implementation is a reference, not the starting class model.
-Do not copy its classes, tests, or architecture as the new implementation.
-Start with executable Smalltalk examples and behavior tests. Let the object
-collaborations guide the classes. Use composition and small protocols.
-Consult the old login and transport code for verified protocol details.
-Port code only after its role in the new design is clear and tested.
-
 ## Project direction
 
 - Build a minimal agent harness in Smalltalk for Pharo.
@@ -29,6 +17,7 @@ Port code only after its role in the new design is clear and tested.
 ## Design and code
 
 - Implement the agent loop in Smalltalk.
+- Start with executable Smalltalk examples and behavior tests. Let object collaborations guide the classes.
 - Prefer small objects, short methods, and explicit protocols.
 - Use composition when it keeps responsibilities clear.
 - Keep provider details outside the agent loop.

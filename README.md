@@ -2,11 +2,6 @@
 
 A minimal Smalltalk agent harness for Pharo 13 on macOS.
 
-This implementation was rebuilt from zero and integrated into `main`.
-The previous version remains at tag `archive/pre-restart-2026-09-10`.
-The temporary rewrite worktree was removed after integration. The abandoned
-local refactor is retained in Git stash. The active checkout is `SmallGPTalk`.
-
 ## Design principles
 
 [Pi Coding Agent](https://github.com/earendil-works/pi/tree/main/packages/coding-agent#philosophy)
@@ -26,21 +21,13 @@ See [AGENTS.md](AGENTS.md) for the ten engineering principles and repository rul
 
 ## Current status
 
-The rewrite has named agents, asynchronous sessions, retained exchanges,
+SmallGPTalk has named agents, asynchronous sessions, retained exchanges,
 evaluation objects, cancellation, fork, manual and automatic compaction,
 context inspection, detachable chat views, and an OpenAI account connection.
 Credentials use the macOS login Keychain.
 
-The rewrite acceptance checks passed. On 2026-09-11, a fresh browser login
-stored credentials in Keychain. A second Pharo process used that record for a
-model request. Live checks also passed evaluation, automatic compaction within
-a tool turn, fork, and continuation without a repeated mutation.
-The current offline suite has 207 passing tests. See [review.md](review.md)
-for the complete source review and its corrections.
-See [the ten-principle audit](docs/principles-audit.md) for the current design
-assessment and the completed corrections.
-See [validation.md](validation.md) for evidence and validation limits.
-See [acceptance.md](acceptance.md) for the requirement-by-requirement audit.
+See [verification](docs/verification.md) for check commands, the latest results,
+and validation limits.
 
 ## Load and test
 
@@ -164,12 +151,11 @@ SmallGPTalk class.
 Replies answer `text`, `calls`, `context`, `usage`, `characterCount`, and
 `result`. The loop validates and records them through these messages. The UI,
 context measurement, and fork do not select behavior by reply class.
-`run result` and `exchange response` retain their existing meaning: a structured
+`run result` and `exchange response` return the response value: a structured
 reply returns that reply, while a simple value returns the original object,
 including nil. Fork copies reply records and their contexts. Simple values
 remain shared by reference. Recorded string text does not change when the
 original string changes.
-
 
 ## Inspect the objects
 
@@ -257,6 +243,8 @@ the calls finish. It
 replaces selected model input with a summary and keeps the complete history.
 Summary requests contain no supplied tools, including before provider encoding.
 Creating a summary request does not change the original request's tool list.
+Automatic compaction preserves the active request's agent name and instructions.
+Agent edits apply to future requests.
 Cancelled or invalid summaries do not discard completed evaluations. Used call
 identifiers remain recorded after compaction. Summary requests have the model
 request timeout and do not count as tool-loop turns.
@@ -315,15 +303,10 @@ request after compaction. A large input that cannot be reduced must be shortened
 Completed tool calls and their results remain in history; they are not replayed
 or silently truncated to make the next request fit.
 
-The live-session check explicitly selects the character policy to force
-compaction with a small fixture. Separate offline tests cover estimated growth,
-Unicode input, tool results, fork, and local rejection. The estimate itself is
-also checked with a live response and in the native UI.
-
 ## Deferred features
 
 File tools, shell tools, other providers, MCP, agent teams, and conversation
-storage are also outside this version. Conversations remain in memory.
+storage are outside this version. Conversations remain in memory.
 
 ## Open views and observe
 
@@ -412,6 +395,8 @@ Register observers before sending work. Remove them with
 `session removeObserver:`. Observer errors remain in `session observerErrors`.
 Callbacks run synchronously outside the session lock. Keep them short; do not
 wait for the same run inside a callback. Views defer changes to the UI process.
+Each view keeps one pending refresh with the latest state. This groups display
+updates without removing conversation records or core observer notifications.
 Progress includes the start of each call, before its operation is prepared.
 Notifications supply the live exchange. Copy the state you need inside the
 callback if you want a record of that point in time. Text becomes visible
