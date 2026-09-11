@@ -440,3 +440,12 @@ compaction. The suite does not cover that defect yet. Two other observed
 behaviors match explicit README constraints and are not classified as defects.
 See [the audit](docs/principles-audit.md) for the ten assessments, reproduction,
 source inventory, evidence paths, and limits. Production source was not changed.
+
+## Preserve active request settings during compaction
+
+The new agent-snapshot regression failed before the correction: 204 tests,
+203 passes and one failure (`.build/audit-fix-red.log`). All 204 then passed
+(`.build/audit-fix-green.log`). Automatic compaction now derives its request
+from the existing request, preserving name, instructions, and tools. The test
+also checks the fork and the next request after an agent edit. Send and manual
+compaction share one run-start and cleanup path in Session.

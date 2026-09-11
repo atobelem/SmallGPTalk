@@ -42,19 +42,15 @@ SmallGPTalkSession >> useAgent: anAgent [
 { #category : 'sending' }
 SmallGPTalkSession >> send: request [
  ^ lock critical: [
-  | exchange run |
+  | exchange |
   activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
   exchange := SmallGPTalkExchange request: ((context requestFor: request history: exchanges agent: agent) withTools: tools).
   exchange rememberCallsFrom: exchanges.
   exchange reportTo: changes.
-  run := SmallGPTalkRun on: exchange.
   exchanges add: exchange.
-  activeRun := run.
-  run start: [
-   changes notify: exchange.
+  self startExchange: exchange work: [ :run |
    self prepareContextFor: exchange during: run.
-   (self turnFor: run) execute ] whenFinished: [ self release: run ].
-  run ]
+   (self turnFor: run) execute ] onSuccess: [ :value | ] ]
 ]
 
 { #category : 'private' }
@@ -132,20 +128,15 @@ SmallGPTalkSession >> context [ ^ context ]
 { #category : 'compaction' }
 SmallGPTalkSession >> compact [
  ^ lock critical: [
-  | request exchange run count |
+  | request exchange count |
   activeRun ifNotNil: [ self error: 'Wait for the active request to finish.' ].
   exchanges ifEmpty: [ self error: 'There is no history to compact.' ].
   count := exchanges size.
   request := context summaryRequestFrom: exchanges.
   exchange := SmallGPTalkExchange request: request.
-  run := SmallGPTalkRun on: exchange.
-  run whenSucceeded: [ :reply | context absorb: reply through: count ].
-  activeRun := run.
-  run start: [
-   changes notify: exchange.
-   requestLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ]
-  ] whenFinished: [ self release: run ].
-  run ]
+  self startExchange: exchange work: [ :run |
+   requestLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ] ]
+   onSuccess: [ :reply | context absorb: reply through: count ] ]
 ]
 
 { #category : 'private' }
@@ -157,7 +148,7 @@ SmallGPTalkSession >> prepareContextFor: exchange during: run [
  reply := requestLimit value: [ model respondTo: request ] startWhen: [ :start | run whileRunningDo: start ].
  run whileRunningDo: [
   context absorb: reply through: history size.
-  exchange useContext: ((context requestFor: exchange request history: history agent: agent) withTools: tools) ]
+  exchange useContext: ((exchange context withHistory: #()) withSummary: context summary) ]
 ]
 
 { #category : 'initialization' }
@@ -190,4 +181,15 @@ SmallGPTalkSession >> estimateFor: text [
  ^ lock critical: [
   (activeRun notNil or: [ (model respondsTo: #estimateFor:) not ]) ifTrue: [ ^ nil ].
   model estimateFor: ((context requestFor: text history: exchanges agent: agent) withTools: tools) ]
+]
+
+{ #category : 'private' }
+SmallGPTalkSession >> startExchange: exchange work: work onSuccess: success [
+ | run |
+ run := SmallGPTalkRun on: exchange.
+ run whenSucceeded: success.
+ activeRun := run.
+ run start: [ changes notify: exchange. work value: run ]
+  whenFinished: [ self release: run ].
+ ^ run
 ]

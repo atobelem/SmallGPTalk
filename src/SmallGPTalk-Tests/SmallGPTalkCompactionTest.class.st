@@ -499,3 +499,34 @@ SmallGPTalkCompactionTest >> testDisablingTokenThresholdSelectsCharacterPolicy [
  self assert: requests size equals: 2.
  self assert: requests first isCompaction
 ]
+
+{ #category : 'tests - automatic' }
+SmallGPTalkCompactionTest >> testAutomaticSummaryKeepsTheActiveAgentSnapshot [
+ | agent session run received original fork |
+ agent := SmallGPTalkAgent named: 'Before'.
+ agent instructions: 'Original instructions'.
+ modelAction := [ :request | 'Done.' ].
+ session := agent newSessionWith: self.
+ session tools: { SmallGPTalkEvaluate new }.
+ (session send: 'First') wait.
+ session context autoCompactLimit: 1.
+ modelAction := [ :request |
+  request isCompaction
+   ifTrue: [ agent name: 'After'; instructions: 'Changed instructions'. 'Summary.' ]
+   ifFalse: [ received := request. 'Done.' ] ].
+ run := session send: 'Second'. run wait.
+ self assert: run state equals: #completed.
+ self assert: received agentName equals: 'Before'.
+ self assert: received instructions equals: 'Original instructions'.
+ self assert: received tools first name equals: 'evaluate'.
+ self assert: received summary equals: 'Summary.'.
+ self assert: received history isEmpty.
+ original := received.
+ fork := session forkAt: run exchange.
+ self assert: fork conversation last context instructions equals: 'Original instructions'.
+ session context autoCompactLimit: nil.
+ (session send: 'Third') wait.
+ self assert: received agentName equals: 'After'.
+ self assert: received instructions equals: 'Changed instructions'.
+ self assert: original instructions equals: 'Original instructions'
+]
