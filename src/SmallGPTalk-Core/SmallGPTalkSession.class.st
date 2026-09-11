@@ -193,3 +193,8 @@ SmallGPTalkSession >> startExchange: exchange work: work onSuccess: success [
   whenFinished: [ self release: run ].
  ^ run
 ]
+
+{ #category : 'accessing' }
+SmallGPTalkSession >> tools [
+ ^ lock critical: [ tools copy ]
+]

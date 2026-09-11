@@ -19,13 +19,15 @@ The default checks do not put credentials in that image.
 The burst check asserts one queued render and complete text. Its timing is
 reported for comparison; there is no host-dependent speed threshold.
 
-Add `--native` to check the chat, text preview, context estimate, and evaluation
-windows. Each check uses a separate image and output directory. Standalone
+Add `--native` to check the chat, text preview, context estimate, evaluation
+windows, and workspace following. The workspace check changes a fixture method,
+checks its browser selection, and checks the inspector's real target. Each check uses a separate image and output directory. Standalone
 native scripts also create unique output directories unless
 `SMALLGPTALK_CHECK_DIR` is supplied. Run native checks on macOS with a desktop.
 
 Add `--live` to run the live evaluation, compaction, fork, and continuation
-check using the stored login. It uses the exact two-line launcher prompt and
+check using the stored login. It also checks the local `pharo` binding and its retained interaction targets.
+It uses the exact two-line launcher prompt and
 default model and effort. It forces compaction with a small character limit.
 Live checks do not save their images. Default checks do not use credentials.
 
@@ -69,19 +71,21 @@ the test record. This check uses invented data, not the account record.
 
 ## Latest results
 
-The complete check passed on 2026-09-11 at source revision `b9589bc`:
+The application checks passed on 2026-09-11 with workspace following:
 
 | Check | Result |
 | --- | --- |
-| SUnit | 207 passes, no failures or errors; seed 323235140 |
-| Loaded source | 73 classes, 728 methods; no undeclared references or missing self/super messages |
+| SUnit | 218 passes, no failures or errors |
+| Loaded source | 77 classes, 775 methods; no undeclared references or missing self/super messages |
 | Core alone | Named-agent session and independent fork passed |
-| Native views | Chat, running preview, context estimate, and evaluation checks passed; screenshots inspected |
+| Native views | Chat, running preview, context estimate, evaluation, and workspace checks passed |
 | Live session | Evaluation, automatic compaction, fork, manual compaction, and continuation passed with one independently verified mutation |
 
 The live session used `gpt-5.6-luna`, effort `low`, and the exact two-line
-launcher prompt. Local logs are in `.build/verify-tqcy5eks/`. They are ignored
-by Git and can be removed. [The offline CI run passed](https://github.com/atobelem/SmallGPTalk/actions/runs/34615185876).
+launcher prompt. It also checked browse and inspect targets and their evaluation
+links. The live log is in `.build/verify-_r7xjjph/`. The final offline and native
+logs are in `.build/verify-5qiid7qq/`. Local logs are ignored by Git and can be removed. See the [current CI runs](https://github.com/atobelem/SmallGPTalk/actions/workflows/verify.yml)
+for results on an independent image.
 
 The controlled burst retained 25,000 characters. It took 15,448 ms for 1,000
 immediate renders and 32 ms for one queued render on the local host. This

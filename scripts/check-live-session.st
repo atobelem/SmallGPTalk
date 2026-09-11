@@ -1,5 +1,5 @@
 [
- | account model agent session run fork fixture check |
+ | account model agent session run fork fixture check operation |
  check := [ :condition :message | condition ifFalse: [ Error signal: message ] ].
  account := SmallGPTalkOpenAIAccount openAI.
  check value: account isAuthenticated value: 'Log in before the live check.'.
@@ -13,7 +13,7 @@ Use evaluate to inspect and modify the current Pharo image.'.
  session := agent newSessionWith: model.
  session tools: { SmallGPTalkEvaluate new }.
  session context autoCompactPercentage: nil; autoCompactLimit: 100.
- run := session send: 'Use evaluate exactly once with this source: SmallGPTalkLiveFixture increment. Then report its result.'.
+ run := session send: 'Use evaluate exactly once with this source: SmallGPTalkLiveFixture increment. pharo browse: (SmallGPTalkLiveFixture class >> #increment). pharo inspect: SmallGPTalkLiveFixture count. Then report its result.'.
  run wait.
  run state = #completed ifFalse: [
   Stdio stdout nextPutAll: 'Fixture count: '; print: fixture count; lf.
@@ -23,6 +23,12 @@ Use evaluate to inspect and modify the current Pharo image.'.
  check value: (run state = #completed) value: ('Evaluation failed: ', (run error ifNil: [ '' ])).
  check value: (fixture count = 1) value: 'The fixture was not changed exactly once.'.
  check value: (run exchange calls size = 1) value: 'Expected one evaluation call.'.
+ operation := run exchange calls first operation.
+ check value: (operation interactions size = 2) value: 'Expected browse and inspect interactions.'.
+ check value: (operation interactions first target == (fixture class >> #increment)) value: 'The method target is incorrect.'.
+ check value: (operation interactions last target = 1) value: 'The inspected result is incorrect.'.
+ check value: (operation interactions first evaluation == operation) value: 'The interaction lost its evaluation.'.
+ Stdio stdout nextPutAll: 'PASS: live workspace binding and retained interaction targets.'; lf.
  check value: run exchange modelContext summary notNil value: 'The tool turn was not compacted.'.
  Stdio stdout nextPutAll: 'PASS: one real evaluation, independently verified.'; lf.
  Stdio stdout nextPutAll: 'PASS: automatic compaction within the tool turn.'; lf.
